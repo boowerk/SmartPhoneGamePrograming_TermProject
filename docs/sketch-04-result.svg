@@ -1,0 +1,22 @@
+<!-- 발표 README용 화면 스케치: 결과 화면 구성 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640" viewBox="0 0 360 640" role="img" aria-labelledby="title desc">
+  <title id="title">Midnight Survivor 결과 화면 스케치</title>
+  <desc id="desc">생존 시간, 처치 수, 레벨을 보여주는 결과 화면 와이어프레임</desc>
+  <rect width="360" height="640" fill="#20242d"/>
+  <rect x="36" y="64" width="288" height="496" rx="14" fill="#2b303c" stroke="#596070" stroke-width="2"/>
+  <text x="180" y="130" fill="#f4f0e8" font-family="Arial, sans-serif" font-size="32" font-weight="700" text-anchor="middle">RESULT</text>
+  <circle cx="180" cy="205" r="42" fill="#7b1f38"/>
+  <path d="M144 214 C154 168 206 168 216 214 C202 200 192 194 180 194 C168 194 158 200 144 214Z" fill="#f0e7d8"/>
+  <g font-family="Arial, sans-serif" font-size="20" fill="#f7f2e9">
+    <text x="82" y="306">Survival Time</text>
+    <text x="258" y="306" text-anchor="end">05:00</text>
+    <text x="82" y="352">Kills</text>
+    <text x="258" y="352" text-anchor="end">312</text>
+    <text x="82" y="398">Level</text>
+    <text x="258" y="398" text-anchor="end">12</text>
+    <text x="82" y="444">Boss</text>
+    <text x="258" y="444" text-anchor="end">Clear</text>
+  </g>
+  <rect x="90" y="488" width="180" height="52" rx="10" fill="#d94b57"/>
+  <text x="180" y="522" fill="#ffffff" font-family="Arial, sans-serif" font-size="21" font-weight="700" text-anchor="middle">RETRY</text>
+</svg>

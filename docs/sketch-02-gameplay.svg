@@ -1,0 +1,33 @@
+<!-- 발표 README용 화면 스케치: 전투 화면 구성 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640" viewBox="0 0 360 640" role="img" aria-labelledby="title desc">
+  <title id="title">Midnight Survivor 전투 화면 스케치</title>
+  <desc id="desc">플레이어, 적 웨이브, 자동 공격, HUD가 있는 전투 화면 와이어프레임</desc>
+  <rect width="360" height="640" fill="#1b2220"/>
+  <g opacity="0.35" stroke="#60746d" stroke-width="1">
+    <path d="M0 120 H360 M0 240 H360 M0 360 H360 M0 480 H360"/>
+    <path d="M60 0 V640 M180 0 V640 M300 0 V640"/>
+  </g>
+  <rect x="18" y="18" width="324" height="48" rx="8" fill="#11161b" stroke="#4d5865"/>
+  <text x="34" y="49" fill="#f7f2e9" font-family="Arial, sans-serif" font-size="18">HP 82</text>
+  <text x="152" y="49" fill="#f7f2e9" font-family="Arial, sans-serif" font-size="18">03:24</text>
+  <text x="258" y="49" fill="#f7f2e9" font-family="Arial, sans-serif" font-size="18">Lv. 5</text>
+  <g fill="#7a2f3d">
+    <circle cx="78" cy="168" r="17"/>
+    <circle cx="292" cy="178" r="17"/>
+    <circle cx="112" cy="390" r="17"/>
+    <circle cx="288" cy="424" r="17"/>
+    <circle cx="64" cy="506" r="17"/>
+  </g>
+  <g fill="#c64f4d">
+    <circle cx="178" cy="230" r="14"/>
+    <circle cx="232" cy="308" r="14"/>
+    <circle cx="144" cy="468" r="14"/>
+  </g>
+  <circle cx="180" cy="342" r="24" fill="#e3d4b3" stroke="#3e4754" stroke-width="3"/>
+  <circle cx="180" cy="342" r="54" fill="none" stroke="#f6c85f" stroke-width="4" stroke-dasharray="10 8"/>
+  <path d="M198 326 L262 280" stroke="#f7f2e9" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="275" cy="270" r="8" fill="#f6c85f"/>
+  <circle cx="92" cy="548" r="48" fill="#12171d" stroke="#7a8393" stroke-width="2" opacity="0.9"/>
+  <circle cx="108" cy="532" r="18" fill="#d94b57"/>
+  <text x="180" y="608" fill="#b8c0d0" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Drag to move, weapons fire automatically</text>
+</svg>

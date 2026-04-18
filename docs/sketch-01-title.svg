@@ -1,0 +1,14 @@
+<!-- 발표 README용 화면 스케치: 타이틀 화면 구성 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640" viewBox="0 0 360 640" role="img" aria-labelledby="title desc">
+  <title id="title">Midnight Survivor 타이틀 화면 스케치</title>
+  <desc id="desc">세로형 모바일 게임의 타이틀 화면 와이어프레임</desc>
+  <rect width="360" height="640" fill="#17191f"/>
+  <rect x="28" y="44" width="304" height="552" rx="18" fill="#242833" stroke="#596070" stroke-width="2"/>
+  <circle cx="180" cy="170" r="72" fill="#7b1f38"/>
+  <path d="M130 180 C145 100 215 100 230 180 C214 156 198 146 180 146 C162 146 146 156 130 180Z" fill="#f0e7d8"/>
+  <text x="180" y="292" fill="#f4f0e8" font-family="Arial, sans-serif" font-size="34" font-weight="700" text-anchor="middle">Midnight</text>
+  <text x="180" y="332" fill="#f4f0e8" font-family="Arial, sans-serif" font-size="34" font-weight="700" text-anchor="middle">Survivor</text>
+  <rect x="90" y="402" width="180" height="54" rx="10" fill="#d94b57"/>
+  <text x="180" y="437" fill="#ffffff" font-family="Arial, sans-serif" font-size="22" font-weight="700" text-anchor="middle">START</text>
+  <text x="180" y="500" fill="#b8c0d0" font-family="Arial, sans-serif" font-size="15" text-anchor="middle">Touch to survive the night</text>
+</svg>

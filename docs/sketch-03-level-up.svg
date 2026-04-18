@@ -1,0 +1,28 @@
+<!-- 발표 README용 화면 스케치: 레벨업 선택 화면 구성 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640" viewBox="0 0 360 640" role="img" aria-labelledby="title desc">
+  <title id="title">Midnight Survivor 레벨업 화면 스케치</title>
+  <desc id="desc">강화 카드 3개 중 하나를 선택하는 레벨업 화면 와이어프레임</desc>
+  <rect width="360" height="640" fill="#17191f"/>
+  <rect x="0" y="0" width="360" height="640" fill="#000000" opacity="0.35"/>
+  <text x="180" y="90" fill="#f4f0e8" font-family="Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle">LEVEL UP</text>
+  <text x="180" y="124" fill="#b8c0d0" font-family="Arial, sans-serif" font-size="15" text-anchor="middle">Choose one upgrade</text>
+  <g>
+    <rect x="34" y="172" width="292" height="94" rx="10" fill="#2b303c" stroke="#f6c85f" stroke-width="2"/>
+    <circle cx="82" cy="219" r="24" fill="#d94b57"/>
+    <text x="126" y="212" fill="#ffffff" font-family="Arial, sans-serif" font-size="20" font-weight="700">Bullet +1</text>
+    <text x="126" y="238" fill="#b8c0d0" font-family="Arial, sans-serif" font-size="14">기본 투사체 수 증가</text>
+  </g>
+  <g>
+    <rect x="34" y="292" width="292" height="94" rx="10" fill="#2b303c" stroke="#596070" stroke-width="2"/>
+    <circle cx="82" cy="339" r="24" fill="#f6c85f"/>
+    <text x="126" y="332" fill="#ffffff" font-family="Arial, sans-serif" font-size="20" font-weight="700">Blade Orbit</text>
+    <text x="126" y="358" fill="#b8c0d0" font-family="Arial, sans-serif" font-size="14">회전 칼날 피해 증가</text>
+  </g>
+  <g>
+    <rect x="34" y="412" width="292" height="94" rx="10" fill="#2b303c" stroke="#596070" stroke-width="2"/>
+    <circle cx="82" cy="459" r="24" fill="#70a288"/>
+    <text x="126" y="452" fill="#ffffff" font-family="Arial, sans-serif" font-size="20" font-weight="700">Move Speed</text>
+    <text x="126" y="478" fill="#b8c0d0" font-family="Arial, sans-serif" font-size="14">이동 속도 10% 증가</text>
+  </g>
+  <text x="180" y="566" fill="#b8c0d0" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Game pauses while selecting an upgrade</text>
+</svg>
