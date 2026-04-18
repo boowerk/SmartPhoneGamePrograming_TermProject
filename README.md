@@ -5,8 +5,8 @@
 | 항목 | 내용 |
 | --- | --- |
 | 프로젝트 제목 | **Midnight Survivor** |
-| 발표 영상 자료 | [발표 영상 링크 - 업로드 후 교체](https://youtu.be/9x30k_GNS_U?si=-yoUY7hPOzfsyo6O) |
-| 프로젝트 Git Repository | [GitHub Repository - 생성 후 교체](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject) |
+| 발표 영상 자료 | [발표 영상 링크](https://youtu.be/9x30k_GNS_U?si=-yoUY7hPOzfsyo6O) |
+| 프로젝트 Git Repository | [GitHub Repository](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject) |
 | README.md | [README.md](./README.md) |
 | 개발 범위 | [개발 범위 보기](#개발-범위) |
 
