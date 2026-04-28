@@ -6,11 +6,13 @@ import android.graphics.Paint
 import android.view.MotionEvent
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.sin
 import kotlin.random.Random
 import kr.ac.kpu.midnightsurvivor.game.framework.MainGame
 import kr.ac.kpu.midnightsurvivor.game.framework.Scene
 import kr.ac.kpu.midnightsurvivor.game.objects.Enemy
+import kr.ac.kpu.midnightsurvivor.game.objects.EnemyType
 import kr.ac.kpu.midnightsurvivor.game.objects.ExpGem
 import kr.ac.kpu.midnightsurvivor.game.objects.Player
 import kr.ac.kpu.midnightsurvivor.game.objects.Projectile
@@ -23,6 +25,12 @@ class MainScene(game: MainGame) : Scene(game) {
     private val stars = mutableListOf<Pair<Float, Float>>()
     private var initialized = false
     private var dragActive = false
+    private var cameraX = 0f
+    private var cameraY = 0f
+    private var worldWidth = 0f
+    private var worldHeight = 0f
+    private var joystickBaseX = 0f
+    private var joystickBaseY = 0f
     private var dragX = 0f
     private var dragY = 0f
     private var elapsedTime = 0f
@@ -33,10 +41,13 @@ class MainScene(game: MainGame) : Scene(game) {
     override fun onResize(width: Float, height: Float) {
         super.onResize(width, height)
         if (!initialized && width > 0f && height > 0f) {
-            player = Player(width * 0.5f, height * 0.55f)
-            repeat(48) {
-                stars += Random.nextFloat() * width to Random.nextFloat() * height
+            worldWidth = maxOf(width * 2.4f, 1400f)
+            worldHeight = maxOf(height * 2.1f, 2200f)
+            player = Player(worldWidth * 0.5f, worldHeight * 0.5f)
+            repeat(120) {
+                stars += Random.nextFloat() * worldWidth to Random.nextFloat() * worldHeight
             }
+            updateCamera()
             initialized = true
         }
     }
@@ -68,18 +79,26 @@ class MainScene(game: MainGame) : Scene(game) {
     }
 
     private fun updatePlayer(deltaTime: Float) {
-        val moveX = if (dragActive) dragX - player.x else 0f
-        val moveY = if (dragActive) dragY - player.y else 0f
+        val moveX = if (dragActive) dragX - joystickBaseX else 0f
+        val moveY = if (dragActive) dragY - joystickBaseY else 0f
         player.setMoveVector(moveX, moveY)
         player.update(deltaTime)
-        player.clampToBounds(width, height)
+        player.clampToBounds(worldWidth, worldHeight)
+        updateCamera()
     }
 
     private fun updateEnemies(deltaTime: Float) {
         enemies.forEach { enemy ->
             enemy.updateToward(player.x, player.y, deltaTime)
             if (isColliding(player.x, player.y, player.radius, enemy.x, enemy.y, enemy.radius)) {
-                player.takeDamage(enemy.damage)
+                if (player.takeDamage(enemy.damage)) {
+                    val dx = player.x - enemy.x
+                    val dy = player.y - enemy.y
+                    val distance = hypot(dx, dy).coerceAtLeast(1f)
+                    player.nudge((dx / distance) * 34f, (dy / distance) * 34f)
+                    player.clampToBounds(worldWidth, worldHeight)
+                    updateCamera()
+                }
             }
         }
         enemies.removeAll { !it.isActive }
@@ -94,7 +113,7 @@ class MainScene(game: MainGame) : Scene(game) {
                     projectile.isActive = false
                     if (enemy.hit(projectile.damage)) {
                         defeatedEnemies += 1
-                        gems += ExpGem(enemy.x, enemy.y)
+                        gems += ExpGem(enemy.x, enemy.y, enemy.expReward)
                     }
                 }
             }
@@ -125,32 +144,41 @@ class MainScene(game: MainGame) : Scene(game) {
         val edge = Random.nextInt(4)
         val spawnX: Float
         val spawnY: Float
+        val cameraRight = (cameraX + width).coerceAtMost(worldWidth)
+        val cameraBottom = (cameraY + height).coerceAtMost(worldHeight)
         when (edge) {
             0 -> {
-                spawnX = Random.nextFloat() * width
-                spawnY = -margin
+                spawnX = Random.nextFloat() * width + cameraX
+                spawnY = (cameraY - margin).coerceAtLeast(0f)
             }
             1 -> {
-                spawnX = width + margin
-                spawnY = Random.nextFloat() * height
+                spawnX = (cameraRight + margin).coerceAtMost(worldWidth)
+                spawnY = Random.nextFloat() * height + cameraY
             }
             2 -> {
-                spawnX = Random.nextFloat() * width
-                spawnY = height + margin
+                spawnX = Random.nextFloat() * width + cameraX
+                spawnY = (cameraBottom + margin).coerceAtMost(worldHeight)
             }
             else -> {
-                spawnX = -margin
-                spawnY = Random.nextFloat() * height
+                spawnX = (cameraX - margin).coerceAtLeast(0f)
+                spawnY = Random.nextFloat() * height + cameraY
             }
         }
 
         val difficulty = 1f + elapsedTime / 45f
+        val enemyType = if (elapsedTime > 18f && Random.nextFloat() < 0.35f) {
+            EnemyType.DASHER
+        } else {
+            EnemyType.CHASER
+        }
         enemies += Enemy(
             x = spawnX,
             y = spawnY,
-            moveSpeed = 80f + difficulty * 25f,
-            hp = 18f + difficulty * 8f,
-            damage = 10f,
+            type = enemyType,
+            moveSpeed = if (enemyType == EnemyType.CHASER) 80f + difficulty * 25f else 110f + difficulty * 20f,
+            hp = if (enemyType == EnemyType.CHASER) 18f + difficulty * 8f else 12f + difficulty * 6f,
+            damage = if (enemyType == EnemyType.CHASER) 10f else 14f,
+            expReward = if (enemyType == EnemyType.CHASER) 1 else 2,
         )
         spawnTimer = (1.2f - elapsedTime / 120f).coerceAtLeast(0.45f)
     }
@@ -192,20 +220,54 @@ class MainScene(game: MainGame) : Scene(game) {
         canvas.drawColor(Color.parseColor("#08111F"))
         drawBackground(canvas)
 
+        canvas.save()
+        canvas.translate(-cameraX, -cameraY)
+        drawWorldFloor(canvas)
         gems.forEach { it.draw(canvas, paint) }
         projectiles.forEach { it.draw(canvas, paint) }
         enemies.forEach { it.draw(canvas, paint) }
         player.draw(canvas, paint)
+        canvas.restore()
 
         drawHud(canvas)
+        drawJoystick(canvas)
     }
 
     private fun drawBackground(canvas: Canvas) {
         paint.style = Paint.Style.FILL
         stars.forEachIndexed { index, star ->
             paint.color = if (index % 3 == 0) Color.parseColor("#17304E") else Color.parseColor("#11243B")
-            canvas.drawCircle(star.first, star.second, if (index % 3 == 0) 4f else 2f, paint)
+            val parallax = if (index % 3 == 0) 0.18f else 0.1f
+            val screenX = star.first - cameraX * parallax
+            val screenY = star.second - cameraY * parallax
+            if (screenX in -8f..width + 8f && screenY in -8f..height + 8f) {
+                canvas.drawCircle(screenX, screenY, if (index % 3 == 0) 4f else 2f, paint)
+            }
         }
+    }
+
+    private fun drawWorldFloor(canvas: Canvas) {
+        paint.style = Paint.Style.FILL
+        paint.color = Color.parseColor("#0B1727")
+        canvas.drawRect(0f, 0f, worldWidth, worldHeight, paint)
+
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 2f
+        paint.color = Color.parseColor("#14314D")
+        var x = 0f
+        while (x <= worldWidth) {
+            canvas.drawLine(x, 0f, x, worldHeight, paint)
+            x += 140f
+        }
+        var y = 0f
+        while (y <= worldHeight) {
+            canvas.drawLine(0f, y, worldWidth, y, paint)
+            y += 140f
+        }
+
+        paint.strokeWidth = 8f
+        paint.color = Color.parseColor("#335C81")
+        canvas.drawRect(0f, 0f, worldWidth, worldHeight, paint)
     }
 
     private fun drawHud(canvas: Canvas) {
@@ -234,11 +296,53 @@ class MainScene(game: MainGame) : Scene(game) {
             10f,
             paint,
         )
+
+        paint.textAlign = Paint.Align.RIGHT
+        paint.color = Color.parseColor("#C9D1D9")
+        paint.textSize = 24f
+        canvas.drawText("World ${player.x.toInt()}, ${player.y.toInt()}", width - 24f, 44f, paint)
+        canvas.drawText("Enemies ${enemies.size}", width - 24f, 76f, paint)
+    }
+
+    private fun drawJoystick(canvas: Canvas) {
+        if (!dragActive) return
+
+        val knob = clampedJoystickKnob()
+        paint.style = Paint.Style.FILL
+        paint.color = Color.argb(90, 140, 170, 210)
+        canvas.drawCircle(joystickBaseX, joystickBaseY, 92f, paint)
+
+        paint.color = Color.argb(180, 241, 250, 140)
+        canvas.drawCircle(knob.first, knob.second, 42f, paint)
+    }
+
+    private fun clampedJoystickKnob(): Pair<Float, Float> {
+        val dx = dragX - joystickBaseX
+        val dy = dragY - joystickBaseY
+        val distance = hypot(dx, dy)
+        val maxRadius = 82f
+        if (distance <= maxRadius || distance == 0f) {
+            return dragX to dragY
+        }
+        val scale = maxRadius / distance
+        return joystickBaseX + dx * scale to joystickBaseY + dy * scale
+    }
+
+    private fun updateCamera() {
+        cameraX = (player.x - width * 0.5f).coerceIn(0f, (worldWidth - width).coerceAtLeast(0f))
+        cameraY = (player.y - height * 0.5f).coerceIn(0f, (worldHeight - height).coerceAtLeast(0f))
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN,
+            MotionEvent.ACTION_DOWN -> {
+                dragActive = true
+                joystickBaseX = event.x
+                joystickBaseY = event.y
+                dragX = event.x
+                dragY = event.y
+            }
+
             MotionEvent.ACTION_MOVE -> {
                 dragActive = true
                 dragX = event.x

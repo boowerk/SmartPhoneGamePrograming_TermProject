@@ -47,10 +47,16 @@ class Player(
         y = y.coerceIn(radius, height - radius)
     }
 
-    fun takeDamage(amount: Float) {
-        if (hitCooldown > 0f) return
+    fun takeDamage(amount: Float): Boolean {
+        if (hitCooldown > 0f) return false
         hp = (hp - amount).coerceAtLeast(0f)
         hitCooldown = 0.4f
+        return true
+    }
+
+    fun nudge(dx: Float, dy: Float) {
+        x += dx
+        y += dy
     }
 
     fun gainExp(amount: Int): Boolean {
