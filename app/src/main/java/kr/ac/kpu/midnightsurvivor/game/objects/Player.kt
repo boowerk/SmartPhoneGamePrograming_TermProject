@@ -3,18 +3,20 @@ package kr.ac.kpu.midnightsurvivor.game.objects
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.RectF
 import kotlin.math.hypot
 import kr.ac.kpu.midnightsurvivor.game.framework.GameObject
-import kr.ac.kpu.midnightsurvivor.game.framework.Sprite
+import kr.ac.kpu.midnightsurvivor.game.graphics.SpriteAssets
 
 class Player(
     x: Float,
     y: Float,
 ) : GameObject(x, y) {
-    private val sprite = Sprite(Color.parseColor("#8BE9FD"), 32f)
     private var moveX = 0f
     private var moveY = 0f
     private var hitCooldown = 0f
+    private var animationTime = 0f
+    private var facingLeft = false
     var moveSpeed = 260f
     var maxHp = 100f
     var hp = 100f
@@ -24,11 +26,14 @@ class Player(
     private var exp = 0
 
     val radius: Float
-        get() = sprite.radius
+        get() = 24f
 
     fun setMoveVector(dx: Float, dy: Float) {
         moveX = dx
         moveY = dy
+        if (dx != 0f) {
+            facingLeft = dx < 0f
+        }
     }
 
     override fun update(deltaTime: Float) {
@@ -36,6 +41,9 @@ class Player(
         if (length > 0f) {
             x += (moveX / length) * moveSpeed * deltaTime
             y += (moveY / length) * moveSpeed * deltaTime
+            animationTime += deltaTime
+        } else {
+            animationTime += deltaTime * 0.45f
         }
         if (hitCooldown > 0f) {
             hitCooldown -= deltaTime
@@ -80,11 +88,33 @@ class Player(
     }
 
     override fun draw(canvas: Canvas, paint: Paint) {
-        paint.style = Paint.Style.FILL
-        paint.color = if (hitCooldown > 0f) Color.WHITE else sprite.color
-        canvas.drawCircle(x, y, sprite.radius, paint)
+        val moving = hypot(moveX, moveY) > 10f
+        val frames = if (moving) SpriteAssets.playerRun else SpriteAssets.playerIdle
+        val frame = frames[((animationTime * 8f).toInt()) % frames.size]
+        val dest = RectF(x - 28f, y - 36f, x + 28f, y + 36f)
 
+        paint.color = Color.argb(80, 0, 0, 0)
+        paint.style = Paint.Style.FILL
+        canvas.drawOval(x - 18f, y + 18f, x + 18f, y + 28f, paint)
+
+        if (facingLeft) {
+            canvas.save()
+            canvas.scale(-1f, 1f, x, y)
+            canvas.drawBitmap(frame, null, dest, null)
+            canvas.restore()
+        } else {
+            canvas.drawBitmap(frame, null, dest, null)
+        }
+
+        if (hitCooldown > 0f) {
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 3f
+            paint.color = Color.WHITE
+            canvas.drawOval(dest, paint)
+        }
+
+        paint.style = Paint.Style.FILL
         paint.color = Color.parseColor("#1B1F2A")
-        canvas.drawCircle(x + 8f, y - 8f, 6f, paint)
+        canvas.drawCircle(x + 10f, y - 18f, 4f, paint)
     }
 }

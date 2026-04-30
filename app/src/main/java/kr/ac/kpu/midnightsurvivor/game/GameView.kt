@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.view.MotionEvent
 import android.view.View
+import kr.ac.kpu.midnightsurvivor.game.graphics.SpriteAssets
 import kr.ac.kpu.midnightsurvivor.game.framework.MainGame
 
 class GameView(context: Context) : View(context) {
@@ -11,6 +12,7 @@ class GameView(context: Context) : View(context) {
     private var lastFrameNanos = 0L
 
     init {
+        SpriteAssets.initialize(resources)
         isFocusable = true
         isClickable = true
     }
