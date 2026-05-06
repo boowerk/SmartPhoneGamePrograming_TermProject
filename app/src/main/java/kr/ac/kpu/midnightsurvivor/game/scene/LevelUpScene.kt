@@ -46,10 +46,13 @@ class LevelUpScene(
             val option = options[index]
             val card = cards[index]
 
-            paint.color = Color.parseColor("#1F4068")
+            paint.color = Color.parseColor("#12243A")
             canvas.drawRoundRect(card, 24f, 24f, paint)
 
-            paint.color = Color.parseColor("#F1FA8C")
+            paint.color = option.accentColor
+            canvas.drawRoundRect(card.left, card.top, card.left + 18f, card.bottom, 24f, 24f, paint)
+
+            paint.color = option.accentColor
             paint.textSize = 36f
             paint.textAlign = Paint.Align.LEFT
             canvas.drawText(option.title, card.left + 28f, card.top + 52f, paint)
@@ -57,6 +60,11 @@ class LevelUpScene(
             paint.color = Color.WHITE
             paint.textSize = 26f
             canvas.drawText(option.description, card.left + 28f, card.top + 102f, paint)
+
+            paint.color = Color.parseColor("#C9D1D9")
+            paint.textAlign = Paint.Align.RIGHT
+            paint.textSize = 22f
+            canvas.drawText("Rank ${option.rank}/${option.maxRank}", card.right - 28f, card.top + 48f, paint)
         }
     }
 

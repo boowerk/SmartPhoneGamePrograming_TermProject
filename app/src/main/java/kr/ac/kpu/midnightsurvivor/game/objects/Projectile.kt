@@ -12,9 +12,10 @@ class Projectile(
     private val velocityX: Float,
     private val velocityY: Float,
     val damage: Float,
+    private val spriteRadius: Float = 10f,
+    private var lifeTime: Float = 1.5f,
 ) : GameObject(x, y) {
-    private val sprite = Sprite(Color.parseColor("#F1FA8C"), 10f)
-    private var lifeTime = 1.5f
+    private val sprite = Sprite(Color.parseColor("#F1FA8C"), spriteRadius)
 
     val radius: Float
         get() = sprite.radius

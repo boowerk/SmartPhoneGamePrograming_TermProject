@@ -18,11 +18,43 @@ import kr.ac.kpu.midnightsurvivor.game.objects.Player
 import kr.ac.kpu.midnightsurvivor.game.objects.Projectile
 
 class MainScene(game: MainGame) : Scene(game) {
+    private data class UpgradeDefinition(
+        val id: String,
+        val title: String,
+        val maxRank: Int,
+        val accentColor: Int,
+        val description: (nextRank: Int) -> String,
+    )
+
     private lateinit var player: Player
     private val enemies = mutableListOf<Enemy>()
     private val projectiles = mutableListOf<Projectile>()
     private val gems = mutableListOf<ExpGem>()
     private val stars = mutableListOf<Pair<Float, Float>>()
+    private val upgradeRanks = mutableMapOf<String, Int>()
+    private val upgradeDefinitions = listOf(
+        UpgradeDefinition("power", "Moon Shot", 5, Color.parseColor("#F1FA8C")) { rank ->
+            "Projectile damage +3  |  next rank $rank"
+        },
+        UpgradeDefinition("rapid", "Quick Trigger", 5, Color.parseColor("#8BE9FD")) { rank ->
+            "Attack interval 12% faster  |  next rank $rank"
+        },
+        UpgradeDefinition("volley", "Twin Volley", 4, Color.parseColor("#FFB86C")) { rank ->
+            "Projectile count +1  |  next rank $rank"
+        },
+        UpgradeDefinition("speed", "Swift Step", 4, Color.parseColor("#50FA7B")) { rank ->
+            "Move speed +12%  |  next rank $rank"
+        },
+        UpgradeDefinition("vitality", "Vital Core", 4, Color.parseColor("#FF79C6")) { rank ->
+            "Max HP +20 and heal 20  |  next rank $rank"
+        },
+        UpgradeDefinition("magnet", "Soul Magnet", 4, Color.parseColor("#BD93F9")) { rank ->
+            "Pickup radius +40  |  next rank $rank"
+        },
+        UpgradeDefinition("focus", "Long Shot", 4, Color.parseColor("#FF5555")) { rank ->
+            "Projectile size and range up  |  next rank $rank"
+        },
+    )
     private var initialized = false
     private var dragActive = false
     private var cameraX = 0f
@@ -72,9 +104,9 @@ class MainScene(game: MainGame) : Scene(game) {
         }
 
         if (player.hp <= 0f) {
-            game.replaceScene(ResultScene(game, elapsedTime, defeatedEnemies, false))
+            game.replaceScene(ResultScene(game, elapsedTime, defeatedEnemies, player.level, false))
         } else if (elapsedTime >= 90f) {
-            game.replaceScene(ResultScene(game, elapsedTime, defeatedEnemies, true))
+            game.replaceScene(ResultScene(game, elapsedTime, defeatedEnemies, player.level, true))
         }
     }
 
@@ -124,7 +156,7 @@ class MainScene(game: MainGame) : Scene(game) {
     private fun updateGems(deltaTime: Float) {
         var leveledUp = false
         gems.forEach { gem ->
-            gem.updateToward(player.x, player.y, deltaTime)
+            gem.updateToward(player.x, player.y, player.pickupRadius, deltaTime)
             if (isColliding(player.x, player.y, player.radius, gem.x, gem.y, gem.radius)) {
                 gem.isActive = false
                 if (!leveledUp && player.gainExp(gem.amount)) {
@@ -189,30 +221,103 @@ class MainScene(game: MainGame) : Scene(game) {
             return
         }
         val angle = atan2(target.y - player.y, target.x - player.x)
-        val speed = 520f
-        projectiles += Projectile(
-            x = player.x,
-            y = player.y,
-            velocityX = cos(angle) * speed,
-            velocityY = sin(angle) * speed,
-            damage = 12f + player.attackPower * 4f,
-        )
-        shotTimer = 0.45f
+        val spreadStep = 0.16f
+        val count = player.projectileCount
+        val startOffset = -spreadStep * (count - 1) * 0.5f
+        repeat(count) { index ->
+            val projectileAngle = angle + startOffset + spreadStep * index
+            projectiles += Projectile(
+                x = player.x,
+                y = player.y,
+                velocityX = cos(projectileAngle) * player.projectileSpeed,
+                velocityY = sin(projectileAngle) * player.projectileSpeed,
+                damage = 10f + player.attackPower * 3f,
+                spriteRadius = player.projectileRadius,
+                lifeTime = player.projectileLifetime,
+            )
+        }
+        shotTimer = player.attackInterval
     }
 
     private fun buildUpgradeOptions(): List<UpgradeOption> {
-        return listOf(
-            UpgradeOption("speed", "Swift Step", "Move speed +15%"),
-            UpgradeOption("power", "Moon Shot", "Projectile damage +4"),
-            UpgradeOption("heal", "Night Bloom", "Recover 25 HP"),
-        )
+        val available = upgradeDefinitions.filter { definition ->
+            upgradeRanks.getOrDefault(definition.id, 0) < definition.maxRank
+        }.shuffled()
+
+        val selected = available.take(3).map { definition ->
+            val nextRank = upgradeRanks.getOrDefault(definition.id, 0) + 1
+            UpgradeOption(
+                id = definition.id,
+                title = definition.title,
+                description = definition.description(nextRank),
+                rank = nextRank,
+                maxRank = definition.maxRank,
+                accentColor = definition.accentColor,
+            )
+        }.toMutableList()
+
+        while (selected.size < 3) {
+            selected += UpgradeOption(
+                id = if (player.hp < player.maxHp) "heal" else "bonus_exp",
+                title = if (player.hp < player.maxHp) "Night Bloom" else "Soul Echo",
+                description = if (player.hp < player.maxHp) {
+                    "Recover 30 HP immediately"
+                } else {
+                    "Spawn bonus EXP shards around the player"
+                },
+                rank = 1,
+                maxRank = 1,
+                accentColor = if (player.hp < player.maxHp) {
+                    Color.parseColor("#50FA7B")
+                } else {
+                    Color.parseColor("#8BE9FD")
+                },
+            )
+        }
+
+        return selected.take(3)
     }
 
     private fun applyUpgrade(option: UpgradeOption) {
         when (option.id) {
-            "speed" -> player.moveSpeed *= 1.15f
-            "power" -> player.attackPower += 1
-            "heal" -> player.heal(25f)
+            "speed" -> {
+                upgradeRanks.bump(option.id)
+                player.increaseMoveSpeed(1.12f)
+            }
+            "power" -> {
+                upgradeRanks.bump(option.id)
+                player.increaseAttackPower(1)
+            }
+            "rapid" -> {
+                upgradeRanks.bump(option.id)
+                player.improveFireRate(0.88f, 0.14f)
+            }
+            "volley" -> {
+                upgradeRanks.bump(option.id)
+                player.addProjectileCount(1, 5)
+            }
+            "vitality" -> {
+                upgradeRanks.bump(option.id)
+                player.increaseMaxHp(20f)
+            }
+            "magnet" -> {
+                upgradeRanks.bump(option.id)
+                player.increasePickupRadius(40f)
+            }
+            "focus" -> {
+                upgradeRanks.bump(option.id)
+                player.increaseProjectileScale(1.5f, 0.2f)
+            }
+            "heal" -> player.heal(30f)
+            "bonus_exp" -> {
+                repeat(6) {
+                    gems += ExpGem(
+                        x = player.x + Random.nextFloat() * 80f - 40f,
+                        y = player.y + Random.nextFloat() * 80f - 40f,
+                        amount = 2,
+                    )
+                }
+            }
         }
     }
 
@@ -302,6 +407,8 @@ class MainScene(game: MainGame) : Scene(game) {
         paint.textSize = 24f
         canvas.drawText("World ${player.x.toInt()}, ${player.y.toInt()}", width - 24f, 44f, paint)
         canvas.drawText("Enemies ${enemies.size}", width - 24f, 76f, paint)
+        canvas.drawText("Shots ${player.projectileCount}  Rate ${"%.2f".format(player.attackInterval)}", width - 24f, 108f, paint)
+        canvas.drawText("Magnet ${player.pickupRadius.toInt()}", width - 24f, 140f, paint)
     }
 
     private fun drawJoystick(canvas: Canvas) {
@@ -372,5 +479,9 @@ class MainScene(game: MainGame) : Scene(game) {
         val dx = x1 - x2
         val dy = y1 - y2
         return dx * dx + dy * dy
+    }
+
+    private fun MutableMap<String, Int>.bump(id: String) {
+        this[id] = getOrDefault(id, 0) + 1
     }
 }

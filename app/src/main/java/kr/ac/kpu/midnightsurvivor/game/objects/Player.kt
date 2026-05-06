@@ -18,11 +18,26 @@ class Player(
     private var animationTime = 0f
     private var facingLeft = false
     var moveSpeed = 260f
+        private set
     var maxHp = 100f
+        private set
     var hp = 100f
     var level = 1
         private set
     var attackPower = 1
+        private set
+    var attackInterval = 0.45f
+        private set
+    var projectileCount = 1
+        private set
+    var projectileSpeed = 520f
+        private set
+    var projectileRadius = 10f
+        private set
+    var projectileLifetime = 1.5f
+        private set
+    var pickupRadius = 180f
+        private set
     private var exp = 0
 
     val radius: Float
@@ -80,6 +95,36 @@ class Player(
 
     fun heal(amount: Float) {
         hp = (hp + amount).coerceAtMost(maxHp)
+    }
+
+    fun increaseMoveSpeed(multiplier: Float) {
+        moveSpeed *= multiplier
+    }
+
+    fun increaseAttackPower(amount: Int) {
+        attackPower += amount
+    }
+
+    fun improveFireRate(multiplier: Float, minInterval: Float) {
+        attackInterval = (attackInterval * multiplier).coerceAtLeast(minInterval)
+    }
+
+    fun addProjectileCount(amount: Int, maxCount: Int) {
+        projectileCount = (projectileCount + amount).coerceAtMost(maxCount)
+    }
+
+    fun increaseMaxHp(amount: Float) {
+        maxHp += amount
+        hp = (hp + amount).coerceAtMost(maxHp)
+    }
+
+    fun increasePickupRadius(amount: Float) {
+        pickupRadius += amount
+    }
+
+    fun increaseProjectileScale(radiusDelta: Float, lifetimeDelta: Float) {
+        projectileRadius += radiusDelta
+        projectileLifetime += lifetimeDelta
     }
 
     fun expRatio(): Float {

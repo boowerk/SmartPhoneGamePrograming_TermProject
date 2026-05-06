@@ -19,11 +19,11 @@ class ExpGem(
 
     override fun update(deltaTime: Float) = Unit
 
-    fun updateToward(targetX: Float, targetY: Float, deltaTime: Float) {
+    fun updateToward(targetX: Float, targetY: Float, attractRadius: Float, deltaTime: Float) {
         val dx = targetX - x
         val dy = targetY - y
         val distance = hypot(dx, dy)
-        if (distance in 0f..180f) {
+        if (distance in 0f..attractRadius) {
             x += (dx / distance) * 220f * deltaTime
             y += (dy / distance) * 220f * deltaTime
         }

@@ -12,6 +12,7 @@ class ResultScene(
     game: MainGame,
     private val survivedTime: Float,
     private val defeatedEnemies: Int,
+    private val reachedLevel: Int,
     private val victory: Boolean,
 ) : Scene(game) {
     private val restartButton = RectF()
@@ -37,6 +38,7 @@ class ResultScene(
         paint.textSize = 38f
         canvas.drawText("Time  ${"%.1f".format(survivedTime)} sec", width * 0.5f, height * 0.42f, paint)
         canvas.drawText("Defeated  $defeatedEnemies", width * 0.5f, height * 0.50f, paint)
+        canvas.drawText("Level  $reachedLevel", width * 0.5f, height * 0.58f, paint)
 
         paint.color = Color.parseColor("#1F4068")
         paint.style = Paint.Style.FILL
