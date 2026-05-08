@@ -3,6 +3,7 @@ package kr.ac.kpu.midnightsurvivor.game.scene
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.RectF
 import android.view.MotionEvent
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -11,6 +12,7 @@ import kotlin.math.sin
 import kotlin.random.Random
 import kr.ac.kpu.midnightsurvivor.game.framework.MainGame
 import kr.ac.kpu.midnightsurvivor.game.framework.Scene
+import kr.ac.kpu.midnightsurvivor.game.graphics.SpriteAssets
 import kr.ac.kpu.midnightsurvivor.game.objects.Enemy
 import kr.ac.kpu.midnightsurvivor.game.objects.EnemyType
 import kr.ac.kpu.midnightsurvivor.game.objects.ExpGem
@@ -352,24 +354,26 @@ class MainScene(game: MainGame) : Scene(game) {
     }
 
     private fun drawWorldFloor(canvas: Canvas) {
-        paint.style = Paint.Style.FILL
-        paint.color = Color.parseColor("#0B1727")
-        canvas.drawRect(0f, 0f, worldWidth, worldHeight, paint)
+        val tileSize = 48f
+        val startTileX = (cameraX / tileSize).toInt().coerceAtLeast(0)
+        val startTileY = (cameraY / tileSize).toInt().coerceAtLeast(0)
+        val endTileX = ((cameraX + width) / tileSize).toInt() + 2
+        val endTileY = ((cameraY + height) / tileSize).toInt() + 2
+        val tiles = SpriteAssets.floorTiles
+
+        for (ty in startTileY..endTileY) {
+            for (tx in startTileX..endTileX) {
+                val left = tx * tileSize
+                val top = ty * tileSize
+                if (left >= worldWidth || top >= worldHeight) continue
+                val bitmap = tiles[((tx * 13 + ty * 7) and Int.MAX_VALUE) % tiles.size]
+                val right = (left + tileSize).coerceAtMost(worldWidth)
+                val bottom = (top + tileSize).coerceAtMost(worldHeight)
+                canvas.drawBitmap(bitmap, null, RectF(left, top, right, bottom), null)
+            }
+        }
 
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 2f
-        paint.color = Color.parseColor("#14314D")
-        var x = 0f
-        while (x <= worldWidth) {
-            canvas.drawLine(x, 0f, x, worldHeight, paint)
-            x += 140f
-        }
-        var y = 0f
-        while (y <= worldHeight) {
-            canvas.drawLine(0f, y, worldWidth, y, paint)
-            y += 140f
-        }
-
         paint.strokeWidth = 8f
         paint.color = Color.parseColor("#335C81")
         canvas.drawRect(0f, 0f, worldWidth, worldHeight, paint)
@@ -380,13 +384,13 @@ class MainScene(game: MainGame) : Scene(game) {
         paint.style = Paint.Style.FILL
         paint.color = Color.WHITE
         paint.textSize = 34f
-        canvas.drawText("HP ${player.hp.toInt()}/${player.maxHp.toInt()}", 28f, 48f, paint)
-        canvas.drawText("LV ${player.level}", 28f, 92f, paint)
-        canvas.drawText("TIME ${elapsedTime.toInt()}s", 28f, 136f, paint)
-        canvas.drawText("KILLS $defeatedEnemies", 28f, 180f, paint)
+        drawHearts(canvas, 28f, 24f)
+        canvas.drawText("LV ${player.level}", 28f, 108f, paint)
+        canvas.drawText("TIME ${elapsedTime.toInt()}s", 28f, 152f, paint)
+        canvas.drawText("KILLS $defeatedEnemies", 28f, 196f, paint)
 
         val barLeft = 28f
-        val barTop = 205f
+        val barTop = 220f
         val barWidth = width - 56f
         paint.color = Color.parseColor("#20354C")
         canvas.drawRoundRect(barLeft, barTop, barLeft + barWidth, barTop + 20f, 10f, 10f, paint)
@@ -409,6 +413,19 @@ class MainScene(game: MainGame) : Scene(game) {
         canvas.drawText("Enemies ${enemies.size}", width - 24f, 76f, paint)
         canvas.drawText("Shots ${player.projectileCount}  Rate ${"%.2f".format(player.attackInterval)}", width - 24f, 108f, paint)
         canvas.drawText("Magnet ${player.pickupRadius.toInt()}", width - 24f, 140f, paint)
+    }
+
+    private fun drawHearts(canvas: Canvas, startX: Float, startY: Float) {
+        val heartSpacing = 38f
+        val totalHearts = 5
+        val hpRatio = if (player.maxHp <= 0f) 0f else player.hp / player.maxHp
+        val filledHearts = (hpRatio * totalHearts).toInt().coerceIn(0, totalHearts)
+        repeat(totalHearts) { index ->
+            val left = startX + heartSpacing * index
+            val dest = RectF(left, startY, left + 28f, startY + 28f)
+            val bitmap = if (index < filledHearts) SpriteAssets.heartFull else SpriteAssets.heartEmpty
+            canvas.drawBitmap(bitmap, null, dest, null)
+        }
     }
 
     private fun drawJoystick(canvas: Canvas) {
