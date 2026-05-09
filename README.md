@@ -1,155 +1,230 @@
 # Midnight Survivor
 
-## 과제 본문 링크
+`Midnight Survivor`는 **Kotlin 기반 Android CustomView 게임**으로 제작하는 2D 생존 액션 프로젝트입니다.  
+2차 발표 자료는 별도 PPT 없이 이 `README.md` 안에 정리합니다.
 
-| 항목 | 내용 |
+## 과제 본문
+
+| 항목 | 링크 |
 | --- | --- |
 | 프로젝트 제목 | **Midnight Survivor** |
-| 발표 영상 자료 | [발표 영상 링크](https://youtu.be/9x30k_GNS_U?si=-yoUY7hPOzfsyo6O) |
-| 프로젝트 Git Repository | [GitHub Repository](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject) |
-| README.md | [README.md](./README.md) |
-| 개발 범위 | [개발 범위 보기](#개발-범위) |
+| README.md | [README.md](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject/blob/main/README.md) |
+| 프로젝트 Git Repository | [SmartPhoneGamePrograming_TermProject](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject) |
+| 2차 발표 영상 자료 | [2차 발표 영상 링크 - 업로드 후 교체](https://example.com/midnight-survivor-second-presentation-video) |
+| 1차 발표 영상 자료 | [1차 발표 영상](https://youtu.be/9x30k_GNS_U?si=-yoUY7hPOzfsyo6O) |
+| 1차 발표 당시 README.md | [1차 발표 버전 README](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject/blob/a330f20/README.md) |
 
-> 위의 발표 영상 링크와 Git Repository 링크는 제출 전 실제 업로드/저장소 주소로 교체합니다.
+> `2차 발표 영상 자료`는 실제 업로드가 끝난 뒤 최종 URL로 교체합니다.
 
-## 게임 컨셉
+## 게임 소개
 
-**High Concept**  
-`Midnight Survivor`는 뱀파이어 서바이벌류 자동 공격 생존 액션 게임입니다. 플레이어는 세로 화면에서 터치 드래그로 캐릭터를 이동시키고, 무기는 자동으로 발사됩니다. 제한 시간 동안 몰려오는 적을 피하면서 경험치를 모아 성장하고, 마지막 보스를 처치하거나 제한 시간까지 생존하는 것이 목표입니다.
+`Midnight Survivor`는 세로 화면에서 한 손으로 조작하는 뱀파이어 서바이벌 계열 게임입니다.  
+플레이어는 드래그 입력으로 캐릭터를 움직이고, 무기는 자동으로 공격합니다. 적을 피하면서 경험치를 모아 레벨업하고, 강화 카드를 선택해 점점 강해지는 웨이브를 버티는 것이 핵심입니다.
 
-**레퍼런스**  
-핵심 감각은 `탕탕특공대`처럼 한 손 조작, 자동 공격, 빠른 성장 선택, 대량 적 웨이브를 중심으로 구성합니다. 단, 수업에서 만드는 Android CustomView 기반 게임 프레임워크를 사용해 직접 구현 가능한 범위로 축소합니다.
+이번 프로젝트는 **Kotlin**으로 만들고, 교수님 GitHub 수업 저장소에서 다룬 게임 프레임워크 구조를 기준으로 구현합니다.
 
-**핵심 메카닉**
+- 수업 저장소: [spgp_2026](https://github.com/scgyong-kpu/spgp_2026)
+- 01반 README: [a01 README](https://raw.githubusercontent.com/scgyong-kpu/spgp_2026/a01/README.md)
+- 핵심 반영 항목: `CustomView based Game App`, `postDelayed()/Choreographer`, `Frame Time/FPS`, `Move based time`, `GameObject`, `Sprite`, `MainGame`, `Touch Event handling`, `Object Lifecycle Management`, `GameObject Layering`, `Collision Check/Handling`, `Multiple Scene`
 
-- 이동: 화면 하단 가상 조이스틱 또는 터치 드래그 기반 8방향 이동
-- 전투: 가장 가까운 적 또는 지정 패턴을 향한 자동 공격
-- 성장: 경험치 보석 획득 후 레벨업 시 3개 강화 카드 중 1개 선택
-- 생존 압박: 시간이 지날수록 적 수, 이동 속도, 체력이 증가
-- 충돌: 플레이어-적, 투사체-적, 경험치 보석-플레이어 충돌 처리
-- 결과: 생존 시간, 처치 수, 획득 레벨을 결과 화면에 표시
+## 현재까지의 진행 상황
 
-## 개발 범위
+아래 진행률은 **현재 Git 저장소에 반영된 내용 기준**입니다.
 
-수업 Git Repository의 README에서 이번 학기에 다루는 `CustomView based Game App`, `postDelayed()/Choreographer`, `Frame Time/FPS`, `Move based time`, `GameObject`, `Sprite`, `MainGame`, `Touch Event handling`, `Frame Animation`, `Game Framework`, `Object Lifecycle Management`, `GameObject Layering`, `Score/Font Drawing`, `Background Layering`, `Collision Check/Handling`, `Multiple Scene` 내용을 기준으로 개발 범위를 정합니다.
+| 항목 | 진행률 | 설명 |
+| --- | ---: | --- |
+| 프로젝트 컨셉 정리 | 90% | 장르, 목표 플레이, 핵심 메카닉 정리 완료 |
+| Kotlin 전환 설계 | 85% | Kotlin 기준 패키지 구조와 Android 프로젝트 골격 작성 완료 |
+| 교수님 프레임워크 분석 | 75% | 수업 저장소의 핵심 구조를 `MainGame`, `Scene`, `GameObject`, `Sprite` 형태로 반영함 |
+| Activity 구성 구현 | 90% | `MainActivity`와 `GameView` 기반 단일 Activity 구조 구현 |
+| Scene 구성 구현 | 80% | `TitleScene`, `MainScene`, `LevelUpScene`, `ResultScene` 기본 흐름 구현 |
+| MainScene 오브젝트 구현 | 75% | 플레이어, 적, 투사체, 경험치 보석, HUD 로직이 동작하는 1차 프로토타입 작성 |
+| README 발표 자료 정리 | 95% | 2차 발표 요구사항 기준으로 문서 구성 완료 |
+| 실제 Kotlin 구현 코드 | 45% | 플레이어 이동, 자동 공격, 적 추적, 경험치/레벨업, 결과 화면까지 기본 루프 구현 |
+| 테스트 및 밸런싱 | 0% | 실제 플레이 가능한 빌드 작성 후 진행 예정 |
 
-| 분류 | 구현 범위 | 정량 목표 |
+### 현재 구현된 프로토타입 기능
+
+- `MainActivity.kt`에서 세로 고정, 전체 화면, `GameView` 초기화
+- `GameView.kt`에서 `onDraw()` 기반 프레임 업데이트와 터치 입력 전달
+- `MainGame.kt`에서 Scene 스택 관리
+- `TitleScene -> MainScene -> LevelUpScene -> ResultScene` 전환
+- 드래그 기반 플레이어 이동
+- 가장 가까운 적을 향한 자동 투사체 발사
+- 적 추적, 플레이어 피격, 경험치 보석 드롭
+- 레벨업 시 3개의 강화 카드 선택
+- 90초 생존 또는 HP 0 조건에 따른 결과 화면 이동
+
+## Git Commit 현황
+
+- 전체 커밋 수: `9회`
+- 커밋 분산 시기: `2026-04-19`, `2026-04-21`, `2026-04-28`, `2026-04-30`, `2026-05-06`, `2026-05-08`, `2026-05-09`
+- 현재 상태: 초기 문서 작업 이후 Kotlin 프로토타입 구현 과정을 주차별 단위로 나누어 반영함
+- GitHub 확인 링크:
+  - [Commits 목록](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject/commits/main/)
+  - [GitHub Insights - Commit Activity](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject/graphs/commit-activity)
+
+### 주요 구현 커밋
+
+| 날짜 | 커밋 | 내용 |
 | --- | --- | --- |
-| 플랫폼 | Android 세로 화면 게임 | 1개 Activity, CustomView 기반 |
-| 프레임워크 | 수업 Game Framework 사용 | `MainGame`, `GameObject`, `Sprite`, Scene 구조 적용 |
-| 입력 | 터치 이동 | 드래그/가상 조이스틱 1종 |
-| 플레이어 | 생존자 캐릭터 | 1종, HP/이동속도/레벨/경험치 보유 |
-| 무기 | 자동 공격 무기 | 기본 총알, 회전 칼날, 범위 오라 총 3종 |
-| 강화 | 레벨업 선택지 | 무기별 3단계, 공통 강화 3종 |
-| 적 | 일반 적/돌진 적/원거리 적/엘리트 | 최소 4종 |
-| 보스 | 제한 시간 후 등장 | 1종 |
-| 웨이브 | 시간 기반 적 생성 | 5분 플레이 기준 10개 웨이브 |
-| 아이템 | 경험치/회복 아이템 | 2종 |
-| 충돌 | 원형 또는 사각 충돌 | 플레이어, 적, 투사체, 아이템 적용 |
-| UI | 게임 HUD와 결과 표시 | HP, 시간, 레벨, 처치 수, 강화 선택, 결과 화면 |
-| 씬 | 화면 전환 | 타이틀, 게임, 레벨업 팝업, 결과 총 4개 상태 |
-| 리소스 | 이미지 스프라이트/효과음 | 플레이어/적/무기/아이템/배경 기본 리소스 |
+| 2026-05-08 | `e0049ad` | `feat: style dungeon background and level-up ui` |
+| 2026-05-06 | `8db006d` | `feat: add progression loop and level-up rewards` |
+| 2026-04-30 | `c8f003c` | `feat: add player and enemy sprite assets` |
+| 2026-04-28 | `7640b23` | `feat: add combat loop and enemy archetypes` |
+| 2026-04-21 | `1cce6c7` | `feat: scaffold kotlin customview prototype` |
+| 2026-04-19 | `3344c3c` | `Fix: fix README.md` |
 
-## 예상 게임 실행 흐름
+### 주차별 Commit 수
 
-1. 앱 실행 후 타이틀 화면에서 `Start`를 누릅니다.
-2. 게임 화면으로 전환되며 플레이어가 중앙에 생성됩니다.
-3. 플레이어는 터치 드래그로 이동하고, 무기는 자동으로 가장 가까운 적을 공격합니다.
-4. 적 처치 시 경험치 보석 또는 회복 아이템이 드롭됩니다.
-5. 경험치를 모아 레벨업하면 게임이 잠시 멈추고 강화 카드 3개가 표시됩니다.
-6. 강화 선택 후 게임이 재개되고 더 강한 웨이브가 등장합니다.
-7. 5분 생존 시 보스가 등장합니다.
-8. 보스를 처치하거나 플레이어 HP가 0이 되면 결과 화면으로 이동합니다.
+| 주차 | 기간 | 커밋 수 | 비고 |
+| --- | --- | ---: | --- |
+| 1주차 | 2026-04-06 ~ 2026-04-12 | 0 | 저장소 작업 전 |
+| 2주차 | 2026-04-13 ~ 2026-04-19 | 3 | 초기 문서 작성 및 1차 발표 자료 업로드 |
+| 3주차 | 2026-04-20 ~ 2026-04-26 | 1 | Kotlin Android 프로젝트 골격 및 Scene 구조 초안 작성 |
+| 4주차 | 2026-04-27 ~ 2026-05-03 | 2 | 전투 루프 구현과 캐릭터/적 스프라이트 적용 |
+| 5주차 | 2026-05-04 ~ 2026-05-10 | 3 | 성장 루프, 던전 UI 스킨, README 발표 자료 정리 |
+
+## 목표 변경 여부
+
+현재까지 **핵심 목표 자체는 변경하지 않았습니다.**
+
+- 유지한 목표: 세로형 생존 액션, 자동 공격, 성장 카드 선택, 보스 등장, 결과 화면까지 한 사이클 완성
+- 변경된 해석: 구현 언어를 Java보다 **Kotlin 중심으로 정리**하고, 수업 시간에 다룬 교수님 프레임워크 구조를 더 직접적으로 따르는 방향으로 명확화함
+- 이유: 현재 수업 저장소 설명은 Java 기준 예시가 섞여 있지만, 실제 Android 프로젝트 구성은 Kotlin이 더 자연스럽고 `build.gradle.kts` 등 수업 자료와도 연결되기 때문
+
+## Activity 구성
+
+이번 프로젝트는 **단일 Activity + CustomView + Scene 전환** 구조로 구현합니다.
+
+| 구성 요소 | 역할 |
+| --- | --- |
+| `MainActivity.kt` | 앱 시작점, 전체 화면 설정, `GameView` 또는 `MainGame` 초기화 |
+| `GameView.kt` | `onDraw()` 기반 렌더링, 터치 입력 수집, 프레임 갱신 요청 |
+| `MainGame.kt` | 교수님 프레임워크 기준 메인 게임 루프와 Scene 관리 |
+
+### Activity 동작 방식
+
+1. `MainActivity`가 실행되면 상태바/액션바를 정리하고 세로 화면을 고정합니다.
+2. `GameView`를 화면에 붙여 게임 렌더링을 시작합니다.
+3. `MainGame`이 현재 Scene을 관리하고, 터치 입력과 업데이트 루프를 연결합니다.
+4. Scene은 게임 상태에 따라 교체되거나 투명 Scene처럼 겹쳐집니다.
+
+## Scene 구성 및 전환 관계
+
+| Scene | 역할 |
+| --- | --- |
+| `TitleScene` | 게임 제목, 시작 버튼, 조작 안내 |
+| `MainScene` | 실제 플레이, 적 생성, 충돌, 레벨업 조건 처리 |
+| `LevelUpScene` | 레벨업 시 일시정지 후 강화 카드 3개 제시 |
+| `ResultScene` | 생존 시간, 처치 수, 레벨, 재시작 버튼 표시 |
 
 ```mermaid
 flowchart TD
-    A["앱 실행"] --> B["타이틀 화면"]
-    B --> C["게임 시작"]
-    C --> D["이동 / 자동 공격"]
-    D --> E["적 처치 / 경험치 획득"]
-    E --> F{"레벨업?"}
-    F -- "예" --> G["강화 카드 선택"]
-    G --> D
-    F -- "아니오" --> H{"HP 0 또는 보스 처치?"}
-    H -- "아니오" --> D
-    H -- "예" --> I["결과 화면"]
-    I --> B
+    A["MainActivity"] --> B["TitleScene"]
+    B --> C["MainScene"]
+    C --> D{"레벨업?"}
+    D -- "예" --> E["LevelUpScene"]
+    E --> C
+    D -- "아니오" --> F{"플레이어 사망 또는 클리어?"}
+    F -- "예" --> G["ResultScene"]
+    F -- "아니오" --> C
+    G --> B
 ```
 
-## 게임 화면 흐름 스케치
+### Scene 전환 원칙
 
-아래 이미지는 실제 구현 전 발표 영상에 사용할 화면 흐름 스케치입니다. 구현 후에는 실제 게임 실행 스크린샷으로 교체합니다.
+- `TitleScene -> MainScene`: 시작 버튼 클릭 시 전환
+- `MainScene -> LevelUpScene`: 경험치 충족 시 투명 오버레이 또는 일시정지 Scene
+- `LevelUpScene -> MainScene`: 강화 선택 후 복귀
+- `MainScene -> ResultScene`: HP 0 또는 제한 시간 종료 시 전환
+- `ResultScene -> TitleScene`: 다시 시작 또는 종료 선택
 
-| 단계 | 화면 | 설명 |
-| --- | --- | --- |
-| 1 | ![타이틀 화면](./docs/sketch-01-title.svg) | 게임 제목과 시작 버튼 표시 |
-| 2 | ![전투 화면](./docs/sketch-02-gameplay.svg) | 이동, 자동 공격, 적 웨이브, HUD 표시 |
-| 3 | ![레벨업 화면](./docs/sketch-03-level-up.svg) | 3개 강화 카드 중 1개 선택 |
-| 4 | ![결과 화면](./docs/sketch-04-result.svg) | 생존 시간, 처치 수, 레벨 표시 |
+## MainScene GameObject 구성
 
-## 발표 영상 구성
+아래 내용은 **현재 구현된 Kotlin 1차 프로토타입 기준**입니다.
 
-발표 동영상은 **1분 30초**를 목표로 제작합니다. 감점 기준을 피하기 위해 최종 영상 길이는 **1분 25초에서 1분 35초 사이**로 맞춥니다.
+| 클래스 | 그림 구성 정보 | 동작 구성 정보 | 상호작용 정보 | 핵심 코드 설명 |
+| --- | --- | --- | --- | --- |
+| `Player.kt` | 캐릭터 스프라이트, 피격 이펙트, HP 표시 | 드래그 방향 이동, 무적 시간, 경험치 획득 | 적과 충돌 시 피해, 아이템 습득, 무기 발사 기준점 제공 | 터치 벡터를 받아 `deltaTime` 기반으로 이동하고, 충돌 결과를 반영하는 핵심 객체 |
+| `Enemy.kt` | 적 스프라이트, 이동 애니메이션 | 플레이어 추적, 체력 감소, 사망 처리 | 플레이어와 충돌, 투사체에 피격, 사망 시 경험치 드롭 | 플레이어 위치를 향해 이동하고, HP가 0이 되면 제거되며 보상을 생성 |
+| `Projectile.kt` | 기본 총알 이미지 역할의 원형 투사체 | 자동 발사, 수명 시간, 공격력 적용 | 적과 충돌 시 데미지 적용 후 제거 | 가장 가까운 적을 향해 직선으로 발사되는 자동 공격 객체 |
+| `ExpGem.kt` | 경험치 보석 스프라이트 | 정지 또는 플레이어 흡수 이동 | 플레이어 접촉 시 경험치 증가 | 드롭된 보상을 관리하고 레벨업 조건 계산에 필요한 수치를 전달 |
+| `MainScene.kt` | 별 배경, 플레이어/적/투사체/보석 전체 배치 | 적 생성, 자동 공격, 충돌, HUD, 승패 판정 | Scene 전체 오브젝트의 상호작용을 총괄 | 실질적인 전투 루프와 HUD 렌더링, 결과 전환을 담당하는 중심 Scene |
+| `LevelUpScene.kt` | 반투명 오버레이, 카드 3장 | 레벨업 시 일시 정지, 강화 선택 | 선택 결과를 플레이어 스탯에 반영하고 메인 전투로 복귀 | Scene 오버레이 방식으로 강화 선택 UI를 처리 |
+| `ResultScene.kt` | 승패 문구, 기록 표시, 재시작 버튼 | 결과 정보 표시, 타이틀 복귀 | 플레이가 끝난 후 전체 결과를 정리 | 생존 시간과 처치 수를 표시하고 다시 시작을 연결 |
 
-| 시간 | 화면 자료 | 발표 내용 |
-| --- | --- | --- |
-| 0:00-0:10 | 타이틀 화면 | 프로젝트 제목과 장르 소개: 한 손 조작 자동 공격 생존 액션 |
-| 0:10-0:25 | 레퍼런스/컨셉 설명 | 탕탕특공대식 조작감과 뱀파이어 서바이벌식 성장 구조 설명 |
-| 0:25-0:45 | 전투 화면 스케치 | 터치 이동, 자동 공격, 적 웨이브, 경험치 획득 설명 |
-| 0:45-1:00 | 레벨업 화면 스케치 | 3개 강화 카드 중 선택하여 빌드를 만드는 핵심 메카닉 설명 |
-| 1:00-1:15 | 개발 범위 표 | 수업 프레임워크 기반 GameObject, Sprite, 충돌, 레이어, 씬 전환 구현 범위 설명 |
-| 1:15-1:30 | 일정/결과 화면 | 8주 개발 일정과 최종 목표 화면 설명 |
+## MainScene 핵심 클래스 설명
 
-### 1분 30초 발표 대본
+### `Player.kt`
 
-안녕하세요. 제 프로젝트는 `Midnight Survivor`입니다. 뱀파이어 서바이벌류 생존 액션을 Android 세로 화면에 맞춘 게임으로, 레퍼런스는 탕탕특공대입니다. 플레이어는 화면을 드래그해서 캐릭터를 이동시키고, 무기는 자동으로 발사됩니다.
+- 교수님 수업의 `GameObject` 구조를 따라 `update()`와 `draw()`를 분리합니다.
+- 터치 입력을 벡터로 해석해 이동시키고, 프레임 시간 차이와 무관하게 같은 속도로 움직이도록 `deltaTime`을 사용합니다.
+- 충돌 처리 결과에 따라 HP 감소, 경험치 증가, 아이템 습득을 반영합니다.
 
-게임의 핵심은 몰려오는 적을 피하면서 경험치를 모으고, 레벨업할 때마다 3개의 강화 카드 중 하나를 선택해 빌드를 만드는 것입니다. 기본 총알, 회전 칼날, 범위 오라 같은 자동 공격 무기를 구현하고, 시간이 지날수록 적 웨이브가 강해지도록 만들 예정입니다.
+### `Enemy.kt`
 
-개발은 수업에서 만드는 CustomView 기반 게임 프레임워크를 사용하는 것을 원칙으로 합니다. `MainGame`, `GameObject`, `Sprite`, 터치 이벤트, 프레임 시간 기반 이동, 오브젝트 생명주기 관리, 레이어링, 충돌 처리, 점수와 폰트 출력, 여러 씬 전환을 포함합니다.
+- 플레이어 좌표를 목표점으로 하여 이동합니다.
+- 공격을 받으면 체력이 줄고 0이 되면 제거되며 경험치 보석을 생성합니다.
+- 적 타입별로 속도, 공격력, 체력만 바꿔 다양한 적을 만들 수 있습니다.
 
-최종 목표는 5분 플레이 가능한 프로토타입입니다. 타이틀 화면에서 시작해 전투, 레벨업 선택, 보스 등장, 결과 화면까지 이어지는 한 사이클을 완성하겠습니다. 4월 6일 주차부터 8주 동안 프레임워크 적용, 전투 구현, 성장 시스템, 웨이브와 보스, UI와 밸런싱 순서로 개발하겠습니다.
+### `Projectile.kt`
 
-## 개발 일정
+- 현재 프로토타입에서는 가장 가까운 적을 향해 직선으로 날아가는 기본 투사체를 구현했습니다.
+- 이후 무기 종류가 늘어나면 회전형, 범위형 공격으로 확장할 수 있도록 공통 투사체 구조를 유지합니다.
+- 충돌 시 적에게 데미지를 주고 수명 시간이 끝나면 제거합니다.
 
-4월 6일에 시작하는 주를 1주차로 하여 8주간 개발합니다.
+### `MainScene.kt`
 
-| 주차 | 기간 | 개발 목표 | 산출물 |
-| --- | --- | --- | --- |
-| 1주차 | 2026-04-06 ~ 2026-04-12 | 프로젝트 기획 확정, 수업 프레임워크 구조 파악, 화면 비율/좌표계 결정 | README 기획서, 화면 스케치 |
-| 2주차 | 2026-04-13 ~ 2026-04-19 | CustomView 기반 게임 루프 구성, `MainGame`/`GameObject` 기본 구조 적용 | 빈 게임 화면, FPS/프레임 시간 확인 |
-| 3주차 | 2026-04-20 ~ 2026-04-26 | 플레이어 이동과 카메라/배경 구현, 터치 입력 처리 | 플레이어 이동 가능 빌드 |
-| 4주차 | 2026-04-27 ~ 2026-05-03 | 자동 공격 무기 1종, 일반 적 2종, 충돌 처리 구현 | 기본 전투 가능 빌드 |
-| 5주차 | 2026-05-04 ~ 2026-05-10 | 경험치, 레벨업, 강화 카드 선택 UI 구현 | 성장 루프 포함 빌드 |
-| 6주차 | 2026-05-11 ~ 2026-05-17 | 무기 3종, 적 4종, 웨이브 테이블, 오브젝트 재사용 구현 | 5분 웨이브 플레이 빌드 |
-| 7주차 | 2026-05-18 ~ 2026-05-24 | 보스, 결과 화면, 사운드/이펙트, 난이도 밸런싱 | 시작-전투-결과 완성 빌드 |
-| 8주차 | 2026-05-25 ~ 2026-05-31 | 버그 수정, 발표 영상 촬영, README 최종 정리 | 최종 제출본, 1분 30초 발표 영상 |
+- 전투 Scene 하나에서 적 생성, 플레이어 이동, 투사체 갱신, 경험치 흡수, HUD 출력까지 관리합니다.
+- 현재는 별도 `EnemySpawner`나 `Hud` 클래스를 분리하지 않고 `MainScene` 내부에서 먼저 통합 구현했습니다.
+- 이후 코드가 커지면 수업 구조에 맞춰 스포너, HUD, 배경 책임을 분리할 예정입니다.
 
-## 수업 내용 반영 계획
+## UX 진행 방법
 
-- `CustomView based Game App`: Android View의 `onDraw()`를 중심으로 게임 화면을 직접 렌더링합니다.
-- `postDelayed()` 또는 `Choreographer`: 일정한 프레임 갱신과 프레임 시간 계산에 사용합니다.
-- `Move based time`: 기기 성능 차이에 따라 이동 속도가 달라지지 않도록 delta time 기반으로 이동합니다.
-- `GameObject`/`Sprite`: 플레이어, 적, 투사체, 아이템을 공통 객체 구조로 관리합니다.
-- `Touch Event handling`: 플레이어 이동 입력을 처리합니다.
-- `Frame Animation`: 캐릭터, 적, 무기 이펙트 애니메이션에 사용합니다.
-- `Object Lifecycle Management`: 적, 투사체, 아이템을 생성/삭제하거나 재사용합니다.
-- `GameObject Layering`: 배경, 아이템, 적, 플레이어, 투사체, UI 순서로 그립니다.
-- `Score / Font Drawing`: 생존 시간, 처치 수, 레벨, HP를 화면에 출력합니다.
-- `Collision Check / Collision Handling`: 공격, 피격, 아이템 획득을 처리합니다.
-- `Multiple Scene`: 타이틀, 게임, 레벨업, 결과 화면을 상태 또는 Scene으로 분리합니다.
+### 플레이 흐름
 
-## 제출 전 체크리스트
+1. 앱을 실행하면 `TitleScene`에서 게임 제목과 시작 버튼을 먼저 보여줍니다.
+2. `MainScene`에서는 화면 드래그만으로 이동할 수 있게 하여 조작을 단순화합니다.
+3. 레벨업 시 게임을 잠시 멈추고 큰 강화 카드 3개를 화면 중앙에 띄워 선택을 쉽게 합니다.
+4. 게임 종료 후 `ResultScene`에서 생존 시간과 처치 수를 한눈에 보이도록 배치합니다.
 
-- [ ] 발표 영상 링크를 실제 URL로 교체
-- [ ] GitHub Repository 링크를 실제 URL로 교체
-- [ ] 구현 후 스케치 이미지를 실제 게임 스크린샷으로 교체
-- [ ] 발표 영상 길이를 1분 20초 이상 1분 40초 이하로 확인
-- [ ] README의 개발 범위와 실제 구현 범위가 일치하는지 확인
-- [ ] 수업 프레임워크 사용 여부를 코드와 README에서 확인
+### 가독성
 
-## 참고 자료
+- HUD 글자는 배경과 대비가 큰 흰색 또는 노란색 계열을 사용합니다.
+- 본문 텍스트에는 외곽선 또는 반투명 검은 배경을 넣어 어떤 배경에서도 읽히게 합니다.
+- 발표 영상에서는 작은 글자보다 큰 제목, 큰 수치, 짧은 문장을 우선 사용합니다.
 
-- [수업 Git Repository](https://github.com/scgyong-kpu/spgp_2026)
-- [수업 README a01](https://raw.githubusercontent.com/scgyong-kpu/spgp_2026/a01/README.md)
-- [수업 README a02](https://raw.githubusercontent.com/scgyong-kpu/spgp_2026/a02/README.md)
+### 음성 및 발표 방식
+
+- 녹음은 조용한 환경에서 진행하고, 배경음보다 발표 음성이 더 크게 들리도록 조절합니다.
+- 영상에서는 장면을 빠르게 넘기지 않고 5초 이상 유지해 읽을 시간을 확보합니다.
+- 목표 영상 길이는 **1분 45초 전후**로 맞추고, 허용 범위는 **1분 30초에서 2분 00초 사이**로 잡습니다.
+
+## 2차 발표 영상 구성안
+
+| 시간 | 내용 |
+| --- | --- |
+| 0:00 ~ 0:15 | 게임 제목, 장르, 한 줄 소개 |
+| 0:15 ~ 0:35 | 현재까지의 진행 상황과 Kotlin 전환 방향 |
+| 0:35 ~ 0:55 | git commit 현황, GitHub Insights, 주차별 표 설명 |
+| 0:55 ~ 1:15 | Activity 구성과 Scene 전환 구조 설명 |
+| 1:15 ~ 1:35 | MainScene 핵심 오브젝트와 상호작용 설명 |
+| 1:35 ~ 1:45 | 어려운 점, 앞으로의 구현 계획, 마무리 |
+
+## 구현하면서 어려웠던 점 / 추가로 다루었으면 하는 것
+
+- 현재 가장 어려운 부분은 **교수님 프레임워크 구조를 Kotlin 스타일로 자연스럽게 옮기는 것**입니다.
+- 특히 `GameObject` 생명주기 관리, Scene 오버레이, 재사용 가능한 적/투사체 구조가 핵심 난점입니다.
+- 수업에서 추가로 다루어 주시면 좋은 내용은 다음과 같습니다.
+  - Kotlin 버전으로 정리한 `MainGame`, `Scene`, `GameObject` 예제
+  - `Choreographer` 기반 루프와 `postDelayed()` 방식 비교
+  - 오브젝트 풀링과 충돌 최적화 예제
+
+## 제출 전 확인 사항
+
+- [ ] 2차 발표 영상을 업로드하고 링크를 실제 URL로 교체
+- [x] Kotlin 프로젝트 생성 후 `MainActivity`, `GameView`, `MainGame` 구조를 README와 일치시킴
+- [ ] Android Studio에서 실제 빌드 및 실행 확인
+- [ ] 구현이 더 진행되면 진행률 수치를 다시 조정
+- [ ] GitHub 커밋을 실제 작업 단위에 맞춰 꾸준히 남김
