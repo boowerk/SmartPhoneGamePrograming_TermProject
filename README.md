@@ -34,7 +34,6 @@
 | 항목 | 진행률 | 설명 |
 | --- | ---: | --- |
 | 프로젝트 컨셉 정리 | 90% | 장르, 목표 플레이, 핵심 메카닉 정리 완료 |
-| Kotlin 전환 설계 | 85% | Kotlin 기준 패키지 구조와 Android 프로젝트 골격 작성 완료 |
 | 교수님 프레임워크 분석 | 75% | 수업 저장소의 핵심 구조를 `MainGame`, `Scene`, `GameObject`, `Sprite` 형태로 반영함 |
 | Activity 구성 구현 | 90% | `MainActivity`와 `GameView` 기반 단일 Activity 구조 구현 |
 | Scene 구성 구현 | 80% | `TitleScene`, `MainScene`, `LevelUpScene`, `ResultScene` 기본 흐름 구현 |
