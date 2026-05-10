@@ -10,7 +10,7 @@
 | 프로젝트 제목 | **Midnight Survivor** |
 | README.md | [README.md](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject/blob/main/README.md) |
 | 프로젝트 Git Repository | [SmartPhoneGamePrograming_TermProject](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject) |
-| 2차 발표 영상 자료 | [2차 발표 영상 링크 - 업로드 후 교체](https://example.com/midnight-survivor-second-presentation-video) |
+| 2차 발표 영상 자료 | [2차 발표 영상 링크](https://youtu.be/HZ5cnlDDAu0) |
 | 1차 발표 영상 자료 | [1차 발표 영상](https://youtu.be/9x30k_GNS_U?si=-yoUY7hPOzfsyo6O) |
 | 1차 발표 당시 README.md | [1차 발표 버전 README](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject/blob/a330f20/README.md) |
 
