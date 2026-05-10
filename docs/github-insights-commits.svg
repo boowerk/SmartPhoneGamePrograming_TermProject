@@ -1,0 +1,43 @@
+<svg width="660" height="660" viewBox="0 0 660 660" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="660" height="660" rx="14" fill="#0D1117"/>
+  <text x="24" y="36" fill="#F0F6FC" font-family="Arial, sans-serif" font-size="18" font-weight="700">Commits over the last year of</text>
+  <text x="24" y="72" fill="#F0F6FC" font-family="Arial, sans-serif" font-size="18" font-weight="700">boowerk/SmartPhoneGamePrograming_TermProject</text>
+
+  <rect x="24" y="104" width="612" height="526" rx="8" stroke="#30363D" fill="#0D1117"/>
+  <text x="40" y="136" fill="#F0F6FC" font-family="Arial, sans-serif" font-size="14" font-weight="700">Commits</text>
+  <text x="40" y="160" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">Number of commits per week</text>
+
+  <line x1="88" y1="580.5" x2="620" y2="580.5" stroke="#6E7681"/>
+  <line x1="88" y1="501.5" x2="620" y2="501.5" stroke="#30363D" stroke-dasharray="4 4"/>
+  <line x1="88" y1="422.5" x2="620" y2="422.5" stroke="#30363D" stroke-dasharray="4 4"/>
+  <line x1="88" y1="343.5" x2="620" y2="343.5" stroke="#30363D" stroke-dasharray="4 4"/>
+  <line x1="88" y1="264.5" x2="620" y2="264.5" stroke="#30363D" stroke-dasharray="4 4"/>
+  <line x1="88" y1="185.5" x2="620" y2="185.5" stroke="#30363D" stroke-dasharray="4 4"/>
+
+  <text x="64" y="584" text-anchor="end" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">0</text>
+  <text x="64" y="505" text-anchor="end" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">1</text>
+  <text x="64" y="426" text-anchor="end" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">2</text>
+  <text x="64" y="347" text-anchor="end" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">3</text>
+  <text x="64" y="268" text-anchor="end" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">4</text>
+  <text x="64" y="189" text-anchor="end" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">5</text>
+
+  <text x="122" y="606" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">Jun</text>
+  <text x="170" y="606" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">Jul</text>
+  <text x="218" y="606" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">Aug</text>
+  <text x="266" y="606" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">Sep</text>
+  <text x="314" y="606" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">Oct</text>
+  <text x="362" y="606" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">Nov</text>
+  <text x="410" y="606" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">Dec</text>
+  <text x="458" y="606" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">Jan</text>
+  <text x="506" y="606" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">Feb</text>
+  <text x="554" y="606" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">Mar</text>
+  <text x="592" y="606" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">Apr</text>
+  <text x="602" y="606" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">May</text>
+
+  <text transform="translate(36 416) rotate(-90)" fill="#8B949E" font-family="Arial, sans-serif" font-size="12">Commits</text>
+
+  <rect x="575" y="264" width="10" height="316" fill="#2EA043"/>
+  <rect x="585" y="422" width="10" height="158" fill="#2EA043"/>
+  <rect x="595" y="343" width="10" height="237" fill="#2EA043"/>
+  <rect x="605" y="422" width="10" height="158" fill="#2EA043"/>
+</svg>

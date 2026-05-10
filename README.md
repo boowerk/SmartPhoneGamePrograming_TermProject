@@ -64,6 +64,14 @@
   - [Commits 목록](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject/commits/main/)
   - [GitHub Insights - Commit Activity](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject/graphs/commit-activity)
 
+### 커밋 빈도 확인 자료
+
+![GitHub Insights Commit Activity](./docs/github-insights-commits.svg)
+
+- `Commits 목록`에서는 각 커밋의 날짜, 메시지, 실제 작업 단위를 직접 확인할 수 있습니다.
+- `GitHub Insights - Commit Activity`에서는 주차별 커밋 수가 그래프로 표시되어, 어느 시점에 얼마나 자주 커밋했는지 한눈에 확인할 수 있습니다.
+- 현재 기록 기준으로는 2주차 `3회`, 3주차 `1회`, 4주차 `2회`, 5주차 `3회` 커밋하여 구현 진행에 맞춰 주차별로 나누어 반영했습니다.
+
 ### 주요 구현 커밋
 
 | 날짜 | 커밋 | 내용 |
