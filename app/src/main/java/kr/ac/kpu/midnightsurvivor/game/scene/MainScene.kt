@@ -28,6 +28,16 @@ class MainScene(game: MainGame) : Scene(game) {
         val description: (nextRank: Int) -> String,
     )
 
+    private data class WaveDefinition(
+        val label: String,
+        val startTime: Float,
+        val endTime: Float,
+        val spawnInterval: Float,
+        val batchSize: Int,
+        val maxEnemies: Int,
+        val enemyTypes: List<EnemyType>,
+    )
+
     private lateinit var player: Player
     private val enemies = mutableListOf<Enemy>()
     private val projectiles = mutableListOf<Projectile>()
@@ -57,6 +67,14 @@ class MainScene(game: MainGame) : Scene(game) {
             "Projectile size and range up  |  next rank $rank"
         },
     )
+    private val waveDefinitions = listOf(
+        // 6주차 웨이브 테이블: 시간대별 적 조합과 동시 출현 수를 단계적으로 늘립니다.
+        WaveDefinition("WAVE 1", 0f, 45f, 1.20f, 1, 12, listOf(EnemyType.CHASER)),
+        WaveDefinition("WAVE 2", 45f, 95f, 1.05f, 2, 15, listOf(EnemyType.CHASER, EnemyType.DASHER)),
+        WaveDefinition("WAVE 3", 95f, 155f, 0.92f, 2, 18, listOf(EnemyType.CHASER, EnemyType.DASHER, EnemyType.TANK)),
+        WaveDefinition("WAVE 4", 155f, 220f, 0.80f, 3, 22, listOf(EnemyType.DASHER, EnemyType.TANK, EnemyType.RANGER)),
+        WaveDefinition("WAVE 5", 220f, 300f, 0.70f, 3, 25, listOf(EnemyType.CHASER, EnemyType.DASHER, EnemyType.TANK, EnemyType.RANGER)),
+    )
     private var initialized = false
     private var dragActive = false
     private var cameraX = 0f
@@ -71,6 +89,7 @@ class MainScene(game: MainGame) : Scene(game) {
     private var spawnTimer = 0f
     private var shotTimer = 0f
     private var defeatedEnemies = 0
+    private val stageDuration = 300f
 
     override fun onResize(width: Float, height: Float) {
         super.onResize(width, height)
@@ -107,7 +126,7 @@ class MainScene(game: MainGame) : Scene(game) {
 
         if (player.hp <= 0f) {
             game.replaceScene(ResultScene(game, elapsedTime, defeatedEnemies, player.level, false))
-        } else if (elapsedTime >= 90f) {
+        } else if (elapsedTime >= stageDuration) {
             game.replaceScene(ResultScene(game, elapsedTime, defeatedEnemies, player.level, true))
         }
     }
@@ -174,47 +193,76 @@ class MainScene(game: MainGame) : Scene(game) {
     }
 
     private fun spawnEnemy() {
-        val margin = 40f
-        val edge = Random.nextInt(4)
-        val spawnX: Float
-        val spawnY: Float
-        val cameraRight = (cameraX + width).coerceAtMost(worldWidth)
-        val cameraBottom = (cameraY + height).coerceAtMost(worldHeight)
-        when (edge) {
-            0 -> {
-                spawnX = Random.nextFloat() * width + cameraX
-                spawnY = (cameraY - margin).coerceAtLeast(0f)
-            }
-            1 -> {
-                spawnX = (cameraRight + margin).coerceAtMost(worldWidth)
-                spawnY = Random.nextFloat() * height + cameraY
-            }
-            2 -> {
-                spawnX = Random.nextFloat() * width + cameraX
-                spawnY = (cameraBottom + margin).coerceAtMost(worldHeight)
-            }
-            else -> {
-                spawnX = (cameraX - margin).coerceAtLeast(0f)
-                spawnY = Random.nextFloat() * height + cameraY
-            }
+        val currentWave = currentWaveDefinition()
+        if (enemies.size >= currentWave.maxEnemies) {
+            spawnTimer = currentWave.spawnInterval * 0.35f
+            return
         }
 
-        val difficulty = 1f + elapsedTime / 45f
-        val enemyType = if (elapsedTime > 18f && Random.nextFloat() < 0.35f) {
-            EnemyType.DASHER
-        } else {
-            EnemyType.CHASER
+        val margin = 40f
+        val cameraRight = (cameraX + width).coerceAtMost(worldWidth)
+        val cameraBottom = (cameraY + height).coerceAtMost(worldHeight)
+        repeat(currentWave.batchSize) {
+            if (enemies.size >= currentWave.maxEnemies) return@repeat
+
+            val edge = Random.nextInt(4)
+            val spawnX: Float
+            val spawnY: Float
+            when (edge) {
+                0 -> {
+                    spawnX = Random.nextFloat() * width + cameraX
+                    spawnY = (cameraY - margin).coerceAtLeast(0f)
+                }
+
+                1 -> {
+                    spawnX = (cameraRight + margin).coerceAtMost(worldWidth)
+                    spawnY = Random.nextFloat() * height + cameraY
+                }
+
+                2 -> {
+                    spawnX = Random.nextFloat() * width + cameraX
+                    spawnY = (cameraBottom + margin).coerceAtMost(worldHeight)
+                }
+
+                else -> {
+                    spawnX = (cameraX - margin).coerceAtLeast(0f)
+                    spawnY = Random.nextFloat() * height + cameraY
+                }
+            }
+
+            val difficulty = 1f + elapsedTime / 50f
+            val enemyType = currentWave.enemyTypes.random()
+            enemies += Enemy(
+                x = spawnX,
+                y = spawnY,
+                type = enemyType,
+                moveSpeed = when (enemyType) {
+                    EnemyType.CHASER -> 90f + difficulty * 22f
+                    EnemyType.DASHER -> 118f + difficulty * 18f
+                    EnemyType.TANK -> 62f + difficulty * 12f
+                    EnemyType.RANGER -> 88f + difficulty * 14f
+                },
+                hp = when (enemyType) {
+                    EnemyType.CHASER -> 18f + difficulty * 8f
+                    EnemyType.DASHER -> 14f + difficulty * 6f
+                    EnemyType.TANK -> 42f + difficulty * 16f
+                    EnemyType.RANGER -> 22f + difficulty * 9f
+                },
+                damage = when (enemyType) {
+                    EnemyType.CHASER -> 10f
+                    EnemyType.DASHER -> 14f
+                    EnemyType.TANK -> 18f
+                    EnemyType.RANGER -> 11f
+                },
+                expReward = when (enemyType) {
+                    EnemyType.CHASER -> 1
+                    EnemyType.DASHER -> 2
+                    EnemyType.TANK -> 3
+                    EnemyType.RANGER -> 2
+                },
+            )
         }
-        enemies += Enemy(
-            x = spawnX,
-            y = spawnY,
-            type = enemyType,
-            moveSpeed = if (enemyType == EnemyType.CHASER) 80f + difficulty * 25f else 110f + difficulty * 20f,
-            hp = if (enemyType == EnemyType.CHASER) 18f + difficulty * 8f else 12f + difficulty * 6f,
-            damage = if (enemyType == EnemyType.CHASER) 10f else 14f,
-            expReward = if (enemyType == EnemyType.CHASER) 1 else 2,
-        )
-        spawnTimer = (1.2f - elapsedTime / 120f).coerceAtLeast(0.45f)
+        spawnTimer = currentWave.spawnInterval
     }
 
     private fun fireProjectile() {
@@ -380,6 +428,7 @@ class MainScene(game: MainGame) : Scene(game) {
     }
 
     private fun drawHud(canvas: Canvas) {
+        val currentWave = currentWaveDefinition()
         paint.textAlign = Paint.Align.LEFT
         paint.style = Paint.Style.FILL
         paint.color = Color.WHITE
@@ -388,9 +437,10 @@ class MainScene(game: MainGame) : Scene(game) {
         canvas.drawText("LV ${player.level}", 28f, 108f, paint)
         canvas.drawText("TIME ${elapsedTime.toInt()}s", 28f, 152f, paint)
         canvas.drawText("KILLS $defeatedEnemies", 28f, 196f, paint)
+        canvas.drawText(currentWave.label, 28f, 240f, paint)
 
         val barLeft = 28f
-        val barTop = 220f
+        val barTop = 264f
         val barWidth = width - 56f
         paint.color = Color.parseColor("#20354C")
         canvas.drawRoundRect(barLeft, barTop, barLeft + barWidth, barTop + 20f, 10f, 10f, paint)
@@ -413,6 +463,7 @@ class MainScene(game: MainGame) : Scene(game) {
         canvas.drawText("Enemies ${enemies.size}", width - 24f, 76f, paint)
         canvas.drawText("Shots ${player.projectileCount}  Rate ${"%.2f".format(player.attackInterval)}", width - 24f, 108f, paint)
         canvas.drawText("Magnet ${player.pickupRadius.toInt()}", width - 24f, 140f, paint)
+        canvas.drawText("Goal ${stageDuration.toInt()}s", width - 24f, 172f, paint)
     }
 
     private fun drawHearts(canvas: Canvas, startX: Float, startY: Float) {
@@ -496,6 +547,11 @@ class MainScene(game: MainGame) : Scene(game) {
         val dx = x1 - x2
         val dy = y1 - y2
         return dx * dx + dy * dy
+    }
+
+    private fun currentWaveDefinition(): WaveDefinition {
+        return waveDefinitions.firstOrNull { elapsedTime >= it.startTime && elapsedTime < it.endTime }
+            ?: waveDefinitions.last()
     }
 
     private fun MutableMap<String, Int>.bump(id: String) {

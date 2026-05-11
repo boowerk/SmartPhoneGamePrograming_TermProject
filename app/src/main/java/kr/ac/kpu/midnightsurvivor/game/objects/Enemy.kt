@@ -23,11 +23,14 @@ class Enemy(
     private var dashDirY = 0f
     private var animationTime = 0f
     private var facingLeft = false
+    private var strafeDirection = 1f
 
     val radius: Float
         get() = when (type) {
             EnemyType.CHASER -> 20f
             EnemyType.DASHER -> 18f
+            EnemyType.TANK -> 28f
+            EnemyType.RANGER -> 22f
         }
 
     override fun update(deltaTime: Float) = Unit
@@ -69,6 +72,35 @@ class Enemy(
                     dashCooldown = 1.9f
                 }
             }
+
+            EnemyType.TANK -> {
+                // 탱커는 느리지만 꾸준히 압박하도록 단순 추적에 체급만 키웁니다.
+                facingLeft = dx < 0f
+                x += (dx / distance) * moveSpeed * deltaTime
+                y += (dy / distance) * moveSpeed * deltaTime
+                animationTime += deltaTime * 0.55f
+            }
+
+            EnemyType.RANGER -> {
+                // 원거리 적은 거리를 유지하며 측면 이동으로 탄막 준비 자세를 만듭니다.
+                facingLeft = dx < 0f
+                val dirX = dx / distance
+                val dirY = dy / distance
+                val tangentX = -dirY * strafeDirection
+                val tangentY = dirX * strafeDirection
+                val chaseWeight = when {
+                    distance > 360f -> 0.85f
+                    distance < 220f -> -0.65f
+                    else -> 0.08f
+                }
+                x += (dirX * chaseWeight + tangentX * 0.55f) * moveSpeed * deltaTime
+                y += (dirY * chaseWeight + tangentY * 0.55f) * moveSpeed * deltaTime
+                animationTime += deltaTime * 0.9f
+
+                if (distance < 180f || distance > 420f) {
+                    strafeDirection *= -1f
+                }
+            }
         }
     }
 
@@ -83,16 +115,26 @@ class Enemy(
 
     override fun draw(canvas: Canvas, paint: Paint) {
         val frames = when (type) {
-            EnemyType.CHASER -> SpriteAssets.goblinRun
-            EnemyType.DASHER -> SpriteAssets.impRun
+            EnemyType.CHASER,
+            EnemyType.TANK,
+            -> SpriteAssets.goblinRun
+
+            EnemyType.DASHER,
+            EnemyType.RANGER,
+            -> SpriteAssets.impRun
         }
         val frame = frames[((animationTime * 8f).toInt()) % frames.size]
-        val size = if (type == EnemyType.CHASER) 48f else 44f
+        val size = when (type) {
+            EnemyType.CHASER -> 48f
+            EnemyType.DASHER -> 44f
+            EnemyType.TANK -> 64f
+            EnemyType.RANGER -> 50f
+        }
         val dest = RectF(x - size, y - size, x + size, y + size)
 
         paint.style = Paint.Style.FILL
         paint.color = Color.argb(70, 0, 0, 0)
-        canvas.drawOval(x - 16f, y + 14f, x + 16f, y + 24f, paint)
+        canvas.drawOval(x - radius * 0.9f, y + radius * 0.6f, x + radius * 0.9f, y + radius * 1.2f, paint)
 
         if (facingLeft) {
             canvas.save()
@@ -107,8 +149,22 @@ class Enemy(
         paint.color = when {
             type == EnemyType.DASHER && dashTime > 0f -> Color.WHITE
             type == EnemyType.CHASER -> Color.parseColor("#0B1020")
+            type == EnemyType.TANK -> Color.parseColor("#5C2E0D")
+            type == EnemyType.RANGER -> Color.parseColor("#6C1F7A")
             else -> Color.parseColor("#2A0B0B")
         }
         canvas.drawCircle(x + 4f, y - 14f, 3f, paint)
+
+        if (type == EnemyType.TANK) {
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 4f
+            paint.color = Color.parseColor("#F6C85F")
+            canvas.drawCircle(x, y - 2f, radius + 6f, paint)
+        } else if (type == EnemyType.RANGER) {
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 3f
+            paint.color = Color.parseColor("#BD93F9")
+            canvas.drawCircle(x, y - 4f, radius + 8f, paint)
+        }
     }
 }
