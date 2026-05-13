@@ -66,6 +66,12 @@ class MainScene(game: MainGame) : Scene(game) {
         UpgradeDefinition("focus", "Long Shot", 4, Color.parseColor("#FF5555")) { rank ->
             "Projectile size and range up  |  next rank $rank"
         },
+        UpgradeDefinition("blade", "Orbit Blade", 4, Color.parseColor("#F6C85F")) { rank ->
+            "Summon and strengthen rotating blades  |  next rank $rank"
+        },
+        UpgradeDefinition("aura", "Moon Aura", 4, Color.parseColor("#80FFEA")) { rank ->
+            "Pulse damage around the player  |  next rank $rank"
+        },
     )
     private val waveDefinitions = listOf(
         // 6주차 웨이브 테이블: 시간대별 적 조합과 동시 출현 수를 단계적으로 늘립니다.
@@ -88,6 +94,9 @@ class MainScene(game: MainGame) : Scene(game) {
     private var elapsedTime = 0f
     private var spawnTimer = 0f
     private var shotTimer = 0f
+    private var bladeTickTimer = 0f
+    private var auraTickTimer = 0f
+    private var bladeSpinAngle = 0f
     private var defeatedEnemies = 0
     private val stageDuration = 300f
 
@@ -115,6 +124,8 @@ class MainScene(game: MainGame) : Scene(game) {
         updatePlayer(deltaTime)
         updateEnemies(deltaTime)
         updateProjectiles(deltaTime)
+        updateBlades(deltaTime)
+        updateAura(deltaTime)
         updateGems(deltaTime)
 
         if (spawnTimer <= 0f) {
@@ -165,13 +176,57 @@ class MainScene(game: MainGame) : Scene(game) {
                 if (isColliding(projectile.x, projectile.y, projectile.radius, enemy.x, enemy.y, enemy.radius)) {
                     projectile.isActive = false
                     if (enemy.hit(projectile.damage)) {
-                        defeatedEnemies += 1
-                        gems += ExpGem(enemy.x, enemy.y, enemy.expReward)
+                        handleEnemyDefeat(enemy)
                     }
                 }
             }
         }
         projectiles.removeAll { !it.isActive }
+    }
+
+    private fun updateBlades(deltaTime: Float) {
+        if (player.bladeLevel <= 0 || player.bladeCount <= 0) return
+
+        bladeSpinAngle += player.bladeRotationSpeed * deltaTime
+        bladeTickTimer -= deltaTime
+        if (bladeTickTimer > 0f) return
+
+        // 회전 칼날은 일정 틱마다만 충돌 판정을 해 과도한 근접 DPS를 막습니다.
+        bladeTickTimer = 0.18f
+        currentBladePositions().forEach { position ->
+            val target = enemies.firstOrNull { enemy ->
+                enemy.isActive && isColliding(
+                    position.first,
+                    position.second,
+                    player.bladeHitRadius,
+                    enemy.x,
+                    enemy.y,
+                    enemy.radius,
+                )
+            } ?: return@forEach
+
+            if (target.hit(player.bladeDamage)) {
+                handleEnemyDefeat(target)
+            }
+        }
+    }
+
+    private fun updateAura(deltaTime: Float) {
+        if (player.auraLevel <= 0 || player.auraRadius <= 0f) return
+
+        auraTickTimer -= deltaTime
+        if (auraTickTimer > 0f) return
+
+        // 오라는 근접 적 다수를 천천히 깎아내는 생존형 무기로 동작합니다.
+        auraTickTimer = player.auraTickInterval
+        enemies.forEach { enemy ->
+            if (!enemy.isActive) return@forEach
+            if (isColliding(player.x, player.y, player.auraRadius, enemy.x, enemy.y, enemy.radius)) {
+                if (enemy.hit(player.auraDamage)) {
+                    handleEnemyDefeat(enemy)
+                }
+            }
+        }
     }
 
     private fun updateGems(deltaTime: Float) {
@@ -281,7 +336,7 @@ class MainScene(game: MainGame) : Scene(game) {
                 y = player.y,
                 velocityX = cos(projectileAngle) * player.projectileSpeed,
                 velocityY = sin(projectileAngle) * player.projectileSpeed,
-                damage = 10f + player.attackPower * 3f,
+                damage = player.projectileDamage(),
                 spriteRadius = player.projectileRadius,
                 lifeTime = player.projectileLifetime,
             )
@@ -358,6 +413,14 @@ class MainScene(game: MainGame) : Scene(game) {
                 upgradeRanks.bump(option.id)
                 player.increaseProjectileScale(1.5f, 0.2f)
             }
+            "blade" -> {
+                upgradeRanks.bump(option.id)
+                player.upgradeBlades()
+            }
+            "aura" -> {
+                upgradeRanks.bump(option.id)
+                player.upgradeAura()
+            }
             "heal" -> player.heal(30f)
             "bonus_exp" -> {
                 repeat(6) {
@@ -378,9 +441,11 @@ class MainScene(game: MainGame) : Scene(game) {
         canvas.save()
         canvas.translate(-cameraX, -cameraY)
         drawWorldFloor(canvas)
+        drawAura(canvas)
         gems.forEach { it.draw(canvas, paint) }
         projectiles.forEach { it.draw(canvas, paint) }
         enemies.forEach { it.draw(canvas, paint) }
+        drawBlades(canvas)
         player.draw(canvas, paint)
         canvas.restore()
 
@@ -462,8 +527,9 @@ class MainScene(game: MainGame) : Scene(game) {
         canvas.drawText("World ${player.x.toInt()}, ${player.y.toInt()}", width - 24f, 44f, paint)
         canvas.drawText("Enemies ${enemies.size}", width - 24f, 76f, paint)
         canvas.drawText("Shots ${player.projectileCount}  Rate ${"%.2f".format(player.attackInterval)}", width - 24f, 108f, paint)
-        canvas.drawText("Magnet ${player.pickupRadius.toInt()}", width - 24f, 140f, paint)
-        canvas.drawText("Goal ${stageDuration.toInt()}s", width - 24f, 172f, paint)
+        canvas.drawText("Blade ${player.bladeLevel}  Aura ${player.auraLevel}", width - 24f, 140f, paint)
+        canvas.drawText("Magnet ${player.pickupRadius.toInt()}", width - 24f, 172f, paint)
+        canvas.drawText("Goal ${stageDuration.toInt()}s", width - 24f, 204f, paint)
     }
 
     private fun drawHearts(canvas: Canvas, startX: Float, startY: Float) {
@@ -501,6 +567,47 @@ class MainScene(game: MainGame) : Scene(game) {
         }
         val scale = maxRadius / distance
         return joystickBaseX + dx * scale to joystickBaseY + dy * scale
+    }
+
+    private fun drawAura(canvas: Canvas) {
+        if (player.auraLevel <= 0 || player.auraRadius <= 0f) return
+
+        paint.style = Paint.Style.FILL
+        paint.color = Color.argb(24, 128, 255, 234)
+        canvas.drawCircle(player.x, player.y, player.auraRadius, paint)
+
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 4f
+        paint.color = Color.argb(120, 128, 255, 234)
+        canvas.drawCircle(player.x, player.y, player.auraRadius, paint)
+    }
+
+    private fun drawBlades(canvas: Canvas) {
+        if (player.bladeLevel <= 0 || player.bladeCount <= 0) return
+
+        paint.style = Paint.Style.FILL
+        currentBladePositions().forEachIndexed { index, position ->
+            paint.color = if (index % 2 == 0) Color.parseColor("#F6C85F") else Color.parseColor("#FFD87A")
+            canvas.drawCircle(position.first, position.second, player.bladeHitRadius, paint)
+
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 3f
+            paint.color = Color.parseColor("#8C5A1C")
+            canvas.drawCircle(position.first, position.second, player.bladeHitRadius, paint)
+            paint.style = Paint.Style.FILL
+        }
+    }
+
+    private fun currentBladePositions(): List<Pair<Float, Float>> {
+        val positions = mutableListOf<Pair<Float, Float>>()
+        repeat(player.bladeCount) { index ->
+            val angle = bladeSpinAngle + (Math.PI * 2.0 * index / player.bladeCount).toFloat()
+            positions += (
+                player.x + cos(angle) * player.bladeOrbitRadius to
+                    player.y + sin(angle) * player.bladeOrbitRadius
+                )
+        }
+        return positions
     }
 
     private fun updateCamera() {
@@ -547,6 +654,11 @@ class MainScene(game: MainGame) : Scene(game) {
         val dx = x1 - x2
         val dy = y1 - y2
         return dx * dx + dy * dy
+    }
+
+    private fun handleEnemyDefeat(enemy: Enemy) {
+        defeatedEnemies += 1
+        gems += ExpGem(enemy.x, enemy.y, enemy.expReward)
     }
 
     private fun currentWaveDefinition(): WaveDefinition {

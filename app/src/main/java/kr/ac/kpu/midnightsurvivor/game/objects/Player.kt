@@ -38,6 +38,26 @@ class Player(
         private set
     var pickupRadius = 180f
         private set
+    var bladeLevel = 0
+        private set
+    var bladeCount = 0
+        private set
+    var bladeDamage = 0f
+        private set
+    var bladeHitRadius = 16f
+        private set
+    var bladeOrbitRadius = 76f
+        private set
+    var bladeRotationSpeed = 3.6f
+        private set
+    var auraLevel = 0
+        private set
+    var auraRadius = 0f
+        private set
+    var auraDamage = 0f
+        private set
+    var auraTickInterval = 0.7f
+        private set
     private var exp = 0
 
     val radius: Float
@@ -125,6 +145,33 @@ class Player(
     fun increaseProjectileScale(radiusDelta: Float, lifetimeDelta: Float) {
         projectileRadius += radiusDelta
         projectileLifetime += lifetimeDelta
+    }
+
+    fun projectileDamage(): Float {
+        return 10f + attackPower * 3f
+    }
+
+    fun upgradeBlades() {
+        // 칼날은 레벨이 오를수록 개수, 피해량, 회전 반경을 함께 키웁니다.
+        bladeLevel += 1
+        bladeCount = when (bladeLevel) {
+            1 -> 1
+            2 -> 2
+            3 -> 3
+            else -> 4
+        }
+        bladeDamage += 7f
+        bladeHitRadius = (bladeHitRadius + 1.5f).coerceAtMost(24f)
+        bladeOrbitRadius = (bladeOrbitRadius + 10f).coerceAtMost(120f)
+        bladeRotationSpeed = (bladeRotationSpeed + 0.35f).coerceAtMost(5.4f)
+    }
+
+    fun upgradeAura() {
+        // 오라는 범위와 틱 속도를 함께 보정해 근접 생존 수단으로 씁니다.
+        auraLevel += 1
+        auraRadius = if (auraRadius == 0f) 72f else auraRadius + 18f
+        auraDamage += 5f
+        auraTickInterval = (auraTickInterval - 0.06f).coerceAtLeast(0.28f)
     }
 
     fun expRatio(): Float {
