@@ -16,7 +16,19 @@ object SpriteAssets {
         private set
     lateinit var impRun: List<Bitmap>
         private set
+    lateinit var skeletonRun: List<Bitmap>
+        private set
+    lateinit var shamanRun: List<Bitmap>
+        private set
+    lateinit var ogreRun: List<Bitmap>
+        private set
     lateinit var floorTiles: List<Bitmap>
+        private set
+    lateinit var weaponThrowingAxe: Bitmap
+        private set
+    lateinit var weaponKnife: Bitmap
+        private set
+    lateinit var weaponSpear: Bitmap
         private set
     lateinit var buttonBlue: Bitmap
         private set
@@ -59,6 +71,25 @@ object SpriteAssets {
             load(R.drawable.imp_run_anim_f2),
             load(R.drawable.imp_run_anim_f3),
         )
+        // Newly selected monster and weapon assets stay centralized here for easy reuse.
+        skeletonRun = listOf(
+            load(R.drawable.skelet_run_anim_f0),
+            load(R.drawable.skelet_run_anim_f1),
+            load(R.drawable.skelet_run_anim_f2),
+            load(R.drawable.skelet_run_anim_f3),
+        )
+        shamanRun = listOf(
+            load(R.drawable.orc_shaman_run_anim_f0),
+            load(R.drawable.orc_shaman_run_anim_f1),
+            load(R.drawable.orc_shaman_run_anim_f2),
+            load(R.drawable.orc_shaman_run_anim_f3),
+        )
+        ogreRun = listOf(
+            load(R.drawable.ogre_run_anim_f0),
+            load(R.drawable.ogre_run_anim_f1),
+            load(R.drawable.ogre_run_anim_f2),
+            load(R.drawable.ogre_run_anim_f3),
+        )
         floorTiles = listOf(
             load(R.drawable.floor_1),
             load(R.drawable.floor_2),
@@ -69,6 +100,9 @@ object SpriteAssets {
             load(R.drawable.floor_7),
             load(R.drawable.floor_8),
         )
+        weaponThrowingAxe = load(R.drawable.weapon_throwing_axe)
+        weaponKnife = load(R.drawable.weapon_knife)
+        weaponSpear = load(R.drawable.weapon_spear)
         buttonBlue = load(R.drawable.button_blue_up)
         buttonRed = load(R.drawable.button_red_up)
         doorFrameTop = load(R.drawable.doors_frame_top)
