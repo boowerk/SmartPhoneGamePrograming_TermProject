@@ -42,6 +42,9 @@ class MainScene(game: MainGame) : Scene(game) {
     private val enemies = mutableListOf<Enemy>()
     private val projectiles = mutableListOf<Projectile>()
     private val gems = mutableListOf<ExpGem>()
+    private val enemyPool = ArrayDeque<Enemy>()
+    private val projectilePool = ArrayDeque<Projectile>()
+    private val gemPool = ArrayDeque<ExpGem>()
     private val stars = mutableListOf<Pair<Float, Float>>()
     private val upgradeRanks = mutableMapOf<String, Int>()
     private val upgradeDefinitions = listOf(
@@ -127,6 +130,7 @@ class MainScene(game: MainGame) : Scene(game) {
         updateBlades(deltaTime)
         updateAura(deltaTime)
         updateGems(deltaTime)
+        recycleInactiveObjects()
 
         if (spawnTimer <= 0f) {
             spawnEnemy()
@@ -165,7 +169,6 @@ class MainScene(game: MainGame) : Scene(game) {
                 }
             }
         }
-        enemies.removeAll { !it.isActive }
     }
 
     private fun updateProjectiles(deltaTime: Float) {
@@ -181,7 +184,6 @@ class MainScene(game: MainGame) : Scene(game) {
                 }
             }
         }
-        projectiles.removeAll { !it.isActive }
     }
 
     private fun updateBlades(deltaTime: Float) {
@@ -240,7 +242,6 @@ class MainScene(game: MainGame) : Scene(game) {
                 }
             }
         }
-        gems.removeAll { !it.isActive }
 
         if (leveledUp) {
             game.pushScene(LevelUpScene(game, buildUpgradeOptions(), ::applyUpgrade))
@@ -287,7 +288,7 @@ class MainScene(game: MainGame) : Scene(game) {
 
             val difficulty = 1f + elapsedTime / 50f
             val enemyType = currentWave.enemyTypes.random()
-            enemies += Enemy(
+            obtainEnemy(
                 x = spawnX,
                 y = spawnY,
                 type = enemyType,
@@ -331,7 +332,7 @@ class MainScene(game: MainGame) : Scene(game) {
         val startOffset = -spreadStep * (count - 1) * 0.5f
         repeat(count) { index ->
             val projectileAngle = angle + startOffset + spreadStep * index
-            projectiles += Projectile(
+            obtainProjectile(
                 x = player.x,
                 y = player.y,
                 velocityX = cos(projectileAngle) * player.projectileSpeed,
@@ -424,7 +425,7 @@ class MainScene(game: MainGame) : Scene(game) {
             "heal" -> player.heal(30f)
             "bonus_exp" -> {
                 repeat(6) {
-                    gems += ExpGem(
+                    obtainGem(
                         x = player.x + Random.nextFloat() * 80f - 40f,
                         y = player.y + Random.nextFloat() * 80f - 40f,
                         amount = 2,
@@ -658,12 +659,72 @@ class MainScene(game: MainGame) : Scene(game) {
 
     private fun handleEnemyDefeat(enemy: Enemy) {
         defeatedEnemies += 1
-        gems += ExpGem(enemy.x, enemy.y, enemy.expReward)
+        obtainGem(enemy.x, enemy.y, enemy.expReward)
     }
 
     private fun currentWaveDefinition(): WaveDefinition {
         return waveDefinitions.firstOrNull { elapsedTime >= it.startTime && elapsedTime < it.endTime }
             ?: waveDefinitions.last()
+    }
+
+    private fun obtainEnemy(
+        x: Float,
+        y: Float,
+        type: EnemyType,
+        moveSpeed: Float,
+        hp: Float,
+        damage: Float,
+        expReward: Int,
+    ) {
+        val enemy = enemyPool.removeLastOrNull()
+            ?: Enemy(x, y, type, moveSpeed, hp, damage, expReward)
+        enemy.reset(x, y, type, moveSpeed, hp, damage, expReward)
+        enemies += enemy
+    }
+
+    private fun obtainProjectile(
+        x: Float,
+        y: Float,
+        velocityX: Float,
+        velocityY: Float,
+        damage: Float,
+        spriteRadius: Float,
+        lifeTime: Float,
+    ) {
+        val projectile = projectilePool.removeLastOrNull()
+            ?: Projectile(x, y, velocityX, velocityY, damage, spriteRadius, lifeTime)
+        projectile.reset(x, y, velocityX, velocityY, damage, spriteRadius, lifeTime)
+        projectiles += projectile
+    }
+
+    private fun obtainGem(x: Float, y: Float, amount: Int) {
+        val gem = gemPool.removeLastOrNull() ?: ExpGem(x, y, amount)
+        gem.reset(x, y, amount)
+        gems += gem
+    }
+
+    private fun recycleInactiveObjects() {
+        // 비활성 객체를 프레임 끝에 한 번에 회수해 컬렉션 순회를 단순하게 유지합니다.
+        recycleList(enemies, enemyPool)
+        recycleList(projectiles, projectilePool)
+        recycleList(gems, gemPool)
+    }
+
+    private fun <T : Any> recycleList(activeList: MutableList<T>, pool: ArrayDeque<T>) {
+        val iterator = activeList.iterator()
+        while (iterator.hasNext()) {
+            val item = iterator.next()
+            val isActive = when (item) {
+                is Enemy -> item.isActive
+                is Projectile -> item.isActive
+                is ExpGem -> item.isActive
+                else -> true
+            }
+            if (!isActive) {
+                iterator.remove()
+                pool.addLast(item)
+            }
+        }
     }
 
     private fun MutableMap<String, Int>.bump(id: String) {

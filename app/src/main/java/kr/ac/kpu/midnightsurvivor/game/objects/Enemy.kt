@@ -11,12 +11,21 @@ import kr.ac.kpu.midnightsurvivor.game.graphics.SpriteAssets
 class Enemy(
     x: Float,
     y: Float,
-    val type: EnemyType,
-    private val moveSpeed: Float,
-    private var hp: Float,
-    val damage: Float,
-    val expReward: Int,
+    type: EnemyType,
+    moveSpeed: Float,
+    hp: Float,
+    damage: Float,
+    expReward: Int,
 ) : GameObject(x, y) {
+    var type: EnemyType = type
+        private set
+    private var moveSpeed: Float = moveSpeed
+    private var hp: Float = hp
+    private var maxHp: Float = hp
+    var damage: Float = damage
+        private set
+    var expReward: Int = expReward
+        private set
     private var dashCooldown = 1.6f
     private var dashTime = 0f
     private var dashDirX = 0f
@@ -34,6 +43,34 @@ class Enemy(
         }
 
     override fun update(deltaTime: Float) = Unit
+
+    fun reset(
+        x: Float,
+        y: Float,
+        type: EnemyType,
+        moveSpeed: Float,
+        hp: Float,
+        damage: Float,
+        expReward: Int,
+    ) {
+        // 재사용 시 타입별 상태를 함께 초기화해 풀링된 적이 이전 행동을 끌고 오지 않게 합니다.
+        this.x = x
+        this.y = y
+        this.type = type
+        this.moveSpeed = moveSpeed
+        this.hp = hp
+        this.maxHp = hp
+        this.damage = damage
+        this.expReward = expReward
+        dashCooldown = 1.6f
+        dashTime = 0f
+        dashDirX = 0f
+        dashDirY = 0f
+        animationTime = 0f
+        facingLeft = false
+        strafeDirection = 1f
+        isActive = true
+    }
 
     fun updateToward(targetX: Float, targetY: Float, deltaTime: Float) {
         val dx = targetX - x
@@ -166,5 +203,9 @@ class Enemy(
             paint.color = Color.parseColor("#BD93F9")
             canvas.drawCircle(x, y - 4f, radius + 8f, paint)
         }
+    }
+
+    fun hpRatio(): Float {
+        return if (maxHp <= 0f) 0f else (hp / maxHp).coerceIn(0f, 1f)
     }
 }

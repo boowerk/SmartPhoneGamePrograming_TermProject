@@ -10,14 +10,24 @@ import kr.ac.kpu.midnightsurvivor.game.framework.Sprite
 class ExpGem(
     x: Float,
     y: Float,
-    val amount: Int = 1,
+    amount: Int = 1,
 ) : GameObject(x, y) {
+    var amount: Int = amount
+        private set
     private val sprite = Sprite(Color.parseColor("#50FA7B"), 12f)
 
     val radius: Float
         get() = sprite.radius
 
     override fun update(deltaTime: Float) = Unit
+
+    fun reset(x: Float, y: Float, amount: Int) {
+        // 경험치 오브는 수량만 바뀌므로 좌표와 보상량만 되살려 재사용합니다.
+        this.x = x
+        this.y = y
+        this.amount = amount
+        isActive = true
+    }
 
     fun updateToward(targetX: Float, targetY: Float, attractRadius: Float, deltaTime: Float) {
         val dx = targetX - x
