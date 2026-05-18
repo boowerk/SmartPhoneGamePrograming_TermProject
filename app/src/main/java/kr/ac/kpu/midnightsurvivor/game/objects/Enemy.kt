@@ -33,6 +33,7 @@ class Enemy(
     private var animationTime = 0f
     private var facingLeft = false
     private var strafeDirection = 1f
+    private var rangedShotCooldown = 1.4f
 
     val radius: Float
         get() = when (type) {
@@ -69,14 +70,17 @@ class Enemy(
         animationTime = 0f
         facingLeft = false
         strafeDirection = 1f
+        rangedShotCooldown = 1.4f
         isActive = true
     }
 
-    fun updateToward(targetX: Float, targetY: Float, deltaTime: Float) {
+    fun updateToward(targetX: Float, targetY: Float, deltaTime: Float): EnemyShot? {
         val dx = targetX - x
         val dy = targetY - y
         val distance = hypot(dx, dy)
-        if (distance <= 0f) return
+        if (distance <= 0f) return null
+
+        var shot: EnemyShot? = null
 
         when (type) {
             EnemyType.CHASER -> {
@@ -134,11 +138,24 @@ class Enemy(
                 y += (dirY * chaseWeight + tangentY * 0.55f) * moveSpeed * deltaTime
                 animationTime += deltaTime * 0.9f
 
+                rangedShotCooldown -= deltaTime
+                if (distance < 520f && rangedShotCooldown <= 0f) {
+                    shot = EnemyShot(
+                        x = x,
+                        y = y - 6f,
+                        velocityX = dirX * 230f,
+                        velocityY = dirY * 230f,
+                        damage = 9f,
+                        radius = 9f,
+                    )
+                    rangedShotCooldown = if (distance < 260f) 1.15f else 1.55f
+                }
                 if (distance < 180f || distance > 420f) {
                     strafeDirection *= -1f
                 }
             }
         }
+        return shot
     }
 
     fun hit(power: Float): Boolean {

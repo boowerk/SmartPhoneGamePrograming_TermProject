@@ -13,7 +13,10 @@ import kotlin.random.Random
 import kr.ac.kpu.midnightsurvivor.game.framework.MainGame
 import kr.ac.kpu.midnightsurvivor.game.framework.Scene
 import kr.ac.kpu.midnightsurvivor.game.graphics.SpriteAssets
+import kr.ac.kpu.midnightsurvivor.game.objects.BossEnemy
 import kr.ac.kpu.midnightsurvivor.game.objects.Enemy
+import kr.ac.kpu.midnightsurvivor.game.objects.EnemyProjectile
+import kr.ac.kpu.midnightsurvivor.game.objects.EnemyShot
 import kr.ac.kpu.midnightsurvivor.game.objects.EnemyType
 import kr.ac.kpu.midnightsurvivor.game.objects.ExpGem
 import kr.ac.kpu.midnightsurvivor.game.objects.Player
@@ -39,11 +42,14 @@ class MainScene(game: MainGame) : Scene(game) {
     )
 
     private lateinit var player: Player
+    private var boss: BossEnemy? = null
     private val enemies = mutableListOf<Enemy>()
     private val projectiles = mutableListOf<Projectile>()
+    private val enemyProjectiles = mutableListOf<EnemyProjectile>()
     private val gems = mutableListOf<ExpGem>()
     private val enemyPool = ArrayDeque<Enemy>()
     private val projectilePool = ArrayDeque<Projectile>()
+    private val enemyProjectilePool = ArrayDeque<EnemyProjectile>()
     private val gemPool = ArrayDeque<ExpGem>()
     private val stars = mutableListOf<Pair<Float, Float>>()
     private val upgradeRanks = mutableMapOf<String, Int>()
@@ -101,7 +107,11 @@ class MainScene(game: MainGame) : Scene(game) {
     private var auraTickTimer = 0f
     private var bladeSpinAngle = 0f
     private var defeatedEnemies = 0
+    private var bossSpawned = false
+    private var bossDefeated = false
+    private var bossIntroTimer = 0f
     private val stageDuration = 300f
+    private val bossSpawnTime = 240f
 
     override fun onResize(width: Float, height: Float) {
         super.onResize(width, height)
@@ -123,16 +133,22 @@ class MainScene(game: MainGame) : Scene(game) {
         elapsedTime += deltaTime
         spawnTimer -= deltaTime
         shotTimer -= deltaTime
+        bossIntroTimer = (bossIntroTimer - deltaTime).coerceAtLeast(0f)
 
         updatePlayer(deltaTime)
         updateEnemies(deltaTime)
+        updateBoss(deltaTime)
         updateProjectiles(deltaTime)
+        updateEnemyProjectiles(deltaTime)
         updateBlades(deltaTime)
         updateAura(deltaTime)
         updateGems(deltaTime)
         recycleInactiveObjects()
 
-        if (spawnTimer <= 0f) {
+        if (!bossSpawned && elapsedTime >= bossSpawnTime) {
+            spawnBoss()
+        }
+        if (!bossSpawned && spawnTimer <= 0f) {
             spawnEnemy()
         }
         if (shotTimer <= 0f) {
@@ -141,7 +157,7 @@ class MainScene(game: MainGame) : Scene(game) {
 
         if (player.hp <= 0f) {
             game.replaceScene(ResultScene(game, elapsedTime, defeatedEnemies, player.level, false))
-        } else if (elapsedTime >= stageDuration) {
+        } else if (bossDefeated || (elapsedTime >= stageDuration && !bossSpawned)) {
             game.replaceScene(ResultScene(game, elapsedTime, defeatedEnemies, player.level, true))
         }
     }
@@ -157,7 +173,7 @@ class MainScene(game: MainGame) : Scene(game) {
 
     private fun updateEnemies(deltaTime: Float) {
         enemies.forEach { enemy ->
-            enemy.updateToward(player.x, player.y, deltaTime)
+            enemy.updateToward(player.x, player.y, deltaTime)?.let(::obtainEnemyProjectile)
             if (isColliding(player.x, player.y, player.radius, enemy.x, enemy.y, enemy.radius)) {
                 if (player.takeDamage(enemy.damage)) {
                     val dx = player.x - enemy.x
@@ -171,9 +187,44 @@ class MainScene(game: MainGame) : Scene(game) {
         }
     }
 
+    private fun updateBoss(deltaTime: Float) {
+        val activeBoss = boss ?: return
+        if (!activeBoss.isActive) {
+            handleBossDefeat()
+            return
+        }
+
+        // 보스는 별도 루프에서 패턴과 소환을 처리해 웨이브 적과 독립적으로 제어합니다.
+        val action = activeBoss.updateToward(player.x, player.y, deltaTime)
+        action.shots.forEach(::obtainEnemyProjectile)
+        if (action.summonCount > 0) {
+            spawnBossMinions(action.summonCount)
+        }
+
+        if (isColliding(player.x, player.y, player.radius, activeBoss.x, activeBoss.y, activeBoss.radius)) {
+            if (player.takeDamage(18f)) {
+                val dx = player.x - activeBoss.x
+                val dy = player.y - activeBoss.y
+                val distance = hypot(dx, dy).coerceAtLeast(1f)
+                player.nudge((dx / distance) * 48f, (dy / distance) * 48f)
+                player.clampToBounds(worldWidth, worldHeight)
+                updateCamera()
+            }
+        }
+    }
+
     private fun updateProjectiles(deltaTime: Float) {
         projectiles.forEach { projectile ->
             projectile.update(deltaTime)
+            val activeBoss = boss
+            if (projectile.isActive && activeBoss?.isActive == true) {
+                if (isColliding(projectile.x, projectile.y, projectile.radius, activeBoss.x, activeBoss.y, activeBoss.radius)) {
+                    projectile.isActive = false
+                    if (activeBoss.hit(projectile.damage)) {
+                        handleBossDefeat()
+                    }
+                }
+            }
             for (enemy in enemies) {
                 if (!projectile.isActive || !enemy.isActive) continue
                 if (isColliding(projectile.x, projectile.y, projectile.radius, enemy.x, enemy.y, enemy.radius)) {
@@ -181,6 +232,25 @@ class MainScene(game: MainGame) : Scene(game) {
                     if (enemy.hit(projectile.damage)) {
                         handleEnemyDefeat(enemy)
                     }
+                }
+            }
+        }
+    }
+
+    private fun updateEnemyProjectiles(deltaTime: Float) {
+        enemyProjectiles.forEach { projectile ->
+            projectile.update(deltaTime)
+            if (!projectile.isActive) return@forEach
+
+            if (isColliding(player.x, player.y, player.radius, projectile.x, projectile.y, projectile.radius)) {
+                projectile.isActive = false
+                if (player.takeDamage(projectile.damage)) {
+                    val dx = player.x - projectile.x
+                    val dy = player.y - projectile.y
+                    val distance = hypot(dx, dy).coerceAtLeast(1f)
+                    player.nudge((dx / distance) * 22f, (dy / distance) * 22f)
+                    player.clampToBounds(worldWidth, worldHeight)
+                    updateCamera()
                 }
             }
         }
@@ -196,6 +266,23 @@ class MainScene(game: MainGame) : Scene(game) {
         // 회전 칼날은 일정 틱마다만 충돌 판정을 해 과도한 근접 DPS를 막습니다.
         bladeTickTimer = 0.18f
         currentBladePositions().forEach { position ->
+            val activeBoss = boss
+            if (activeBoss?.isActive == true &&
+                isColliding(
+                    position.first,
+                    position.second,
+                    player.bladeHitRadius,
+                    activeBoss.x,
+                    activeBoss.y,
+                    activeBoss.radius,
+                )
+            ) {
+                if (activeBoss.hit(player.bladeDamage)) {
+                    handleBossDefeat()
+                }
+                return@forEach
+            }
+
             val target = enemies.firstOrNull { enemy ->
                 enemy.isActive && isColliding(
                     position.first,
@@ -221,6 +308,14 @@ class MainScene(game: MainGame) : Scene(game) {
 
         // 오라는 근접 적 다수를 천천히 깎아내는 생존형 무기로 동작합니다.
         auraTickTimer = player.auraTickInterval
+        val activeBoss = boss
+        if (activeBoss?.isActive == true &&
+            isColliding(player.x, player.y, player.auraRadius, activeBoss.x, activeBoss.y, activeBoss.radius)
+        ) {
+            if (activeBoss.hit(player.auraDamage)) {
+                handleBossDefeat()
+            }
+        }
         enemies.forEach { enemy ->
             if (!enemy.isActive) return@forEach
             if (isColliding(player.x, player.y, player.auraRadius, enemy.x, enemy.y, enemy.radius)) {
@@ -445,13 +540,16 @@ class MainScene(game: MainGame) : Scene(game) {
         drawAura(canvas)
         gems.forEach { it.draw(canvas, paint) }
         projectiles.forEach { it.draw(canvas, paint) }
+        enemyProjectiles.forEach { it.draw(canvas, paint) }
         enemies.forEach { it.draw(canvas, paint) }
+        boss?.takeIf { it.isActive }?.draw(canvas, paint)
         drawBlades(canvas)
         player.draw(canvas, paint)
         canvas.restore()
 
         drawHud(canvas)
         drawJoystick(canvas)
+        drawBossIntro(canvas)
     }
 
     private fun drawBackground(canvas: Canvas) {
@@ -495,6 +593,7 @@ class MainScene(game: MainGame) : Scene(game) {
 
     private fun drawHud(canvas: Canvas) {
         val currentWave = currentWaveDefinition()
+        val waveLabel = if (bossSpawned && !bossDefeated) "BOSS NIGHT" else currentWave.label
         paint.textAlign = Paint.Align.LEFT
         paint.style = Paint.Style.FILL
         paint.color = Color.WHITE
@@ -503,7 +602,7 @@ class MainScene(game: MainGame) : Scene(game) {
         canvas.drawText("LV ${player.level}", 28f, 108f, paint)
         canvas.drawText("TIME ${elapsedTime.toInt()}s", 28f, 152f, paint)
         canvas.drawText("KILLS $defeatedEnemies", 28f, 196f, paint)
-        canvas.drawText(currentWave.label, 28f, 240f, paint)
+        canvas.drawText(waveLabel, 28f, 240f, paint)
 
         val barLeft = 28f
         val barTop = 264f
@@ -530,7 +629,21 @@ class MainScene(game: MainGame) : Scene(game) {
         canvas.drawText("Shots ${player.projectileCount}  Rate ${"%.2f".format(player.attackInterval)}", width - 24f, 108f, paint)
         canvas.drawText("Blade ${player.bladeLevel}  Aura ${player.auraLevel}", width - 24f, 140f, paint)
         canvas.drawText("Magnet ${player.pickupRadius.toInt()}", width - 24f, 172f, paint)
-        canvas.drawText("Goal ${stageDuration.toInt()}s", width - 24f, 204f, paint)
+        canvas.drawText("Boss ETA ${maxOf(0f, bossSpawnTime - elapsedTime).toInt()}s", width - 24f, 204f, paint)
+
+        boss?.takeIf { it.isActive }?.let { activeBoss ->
+            val bossBarTop = height - 76f
+            paint.textAlign = Paint.Align.CENTER
+            paint.color = Color.parseColor("#FF7A90")
+            paint.textSize = 30f
+            canvas.drawText("Crimson Overlord", width * 0.5f, bossBarTop - 14f, paint)
+
+            paint.style = Paint.Style.FILL
+            paint.color = Color.parseColor("#2A1020")
+            canvas.drawRoundRect(24f, bossBarTop, width - 24f, bossBarTop + 22f, 11f, 11f, paint)
+            paint.color = Color.parseColor("#FF7A90")
+            canvas.drawRoundRect(24f, bossBarTop, 24f + (width - 48f) * activeBoss.hpRatio(), bossBarTop + 22f, 11f, 11f, paint)
+        }
     }
 
     private fun drawHearts(canvas: Canvas, startX: Float, startY: Float) {
@@ -599,6 +712,20 @@ class MainScene(game: MainGame) : Scene(game) {
         }
     }
 
+    private fun drawBossIntro(canvas: Canvas) {
+        if (bossIntroTimer <= 0f) return
+
+        val alpha = (bossIntroTimer / 2.4f).coerceIn(0f, 1f)
+        paint.style = Paint.Style.FILL
+        paint.color = Color.argb((alpha * 160).toInt(), 18, 8, 18)
+        canvas.drawRect(0f, height * 0.36f, width, height * 0.50f, paint)
+
+        paint.textAlign = Paint.Align.CENTER
+        paint.color = Color.argb((alpha * 255).toInt(), 255, 122, 144)
+        paint.textSize = 44f
+        canvas.drawText("BOSS APPROACHING", width * 0.5f, height * 0.43f, paint)
+    }
+
     private fun currentBladePositions(): List<Pair<Float, Float>> {
         val positions = mutableListOf<Pair<Float, Float>>()
         repeat(player.bladeCount) { index ->
@@ -662,6 +789,14 @@ class MainScene(game: MainGame) : Scene(game) {
         obtainGem(enemy.x, enemy.y, enemy.expReward)
     }
 
+    private fun handleBossDefeat() {
+        if (bossDefeated) return
+        boss?.isActive = false
+        boss = null
+        bossDefeated = true
+        defeatedEnemies += 12
+    }
+
     private fun currentWaveDefinition(): WaveDefinition {
         return waveDefinitions.firstOrNull { elapsedTime >= it.startTime && elapsedTime < it.endTime }
             ?: waveDefinitions.last()
@@ -697,6 +832,13 @@ class MainScene(game: MainGame) : Scene(game) {
         projectiles += projectile
     }
 
+    private fun obtainEnemyProjectile(shot: EnemyShot) {
+        val projectile = enemyProjectilePool.removeLastOrNull()
+            ?: EnemyProjectile(shot.x, shot.y, shot.velocityX, shot.velocityY, shot.damage, shot.radius)
+        projectile.reset(shot.x, shot.y, shot.velocityX, shot.velocityY, shot.damage, shot.radius, 3.2f)
+        enemyProjectiles += projectile
+    }
+
     private fun obtainGem(x: Float, y: Float, amount: Int) {
         val gem = gemPool.removeLastOrNull() ?: ExpGem(x, y, amount)
         gem.reset(x, y, amount)
@@ -707,6 +849,7 @@ class MainScene(game: MainGame) : Scene(game) {
         // 비활성 객체를 프레임 끝에 한 번에 회수해 컬렉션 순회를 단순하게 유지합니다.
         recycleList(enemies, enemyPool)
         recycleList(projectiles, projectilePool)
+        recycleList(enemyProjectiles, enemyProjectilePool)
         recycleList(gems, gemPool)
     }
 
@@ -717,6 +860,7 @@ class MainScene(game: MainGame) : Scene(game) {
             val isActive = when (item) {
                 is Enemy -> item.isActive
                 is Projectile -> item.isActive
+                is EnemyProjectile -> item.isActive
                 is ExpGem -> item.isActive
                 else -> true
             }
@@ -724,6 +868,35 @@ class MainScene(game: MainGame) : Scene(game) {
                 iterator.remove()
                 pool.addLast(item)
             }
+        }
+    }
+
+    private fun spawnBoss() {
+        val spawnX = (player.x + width * 0.28f).coerceIn(120f, worldWidth - 120f)
+        val spawnY = (player.y - height * 0.34f).coerceIn(120f, worldHeight - 120f)
+        val nextBoss = boss ?: BossEnemy(spawnX, spawnY)
+        nextBoss.reset(spawnX, spawnY)
+        boss = nextBoss
+        bossSpawned = true
+        bossIntroTimer = 2.4f
+    }
+
+    private fun spawnBossMinions(count: Int) {
+        val activeBoss = boss ?: return
+        repeat(count) { index ->
+            val angle = (Math.PI * 2.0 * index / count).toFloat() + elapsedTime * 0.3f
+            val spawnX = (activeBoss.x + cos(angle) * 120f).coerceIn(40f, worldWidth - 40f)
+            val spawnY = (activeBoss.y + sin(angle) * 120f).coerceIn(40f, worldHeight - 40f)
+            val enemyType = if (index % 2 == 0) EnemyType.DASHER else EnemyType.TANK
+            obtainEnemy(
+                x = spawnX,
+                y = spawnY,
+                type = enemyType,
+                moveSpeed = if (enemyType == EnemyType.DASHER) 150f else 92f,
+                hp = if (enemyType == EnemyType.DASHER) 26f else 52f,
+                damage = if (enemyType == EnemyType.DASHER) 15f else 18f,
+                expReward = if (enemyType == EnemyType.DASHER) 2 else 3,
+            )
         }
     }
 
