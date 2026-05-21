@@ -58,6 +58,52 @@ class Player(
         private set
     var auraTickInterval = 0.7f
         private set
+    var axeLevel = 0
+        private set
+    var axeCount = 0
+        private set
+    var axeDamage = 0f
+        private set
+    var axeInterval = 1.9f
+        private set
+    var axeSpeed = 360f
+        private set
+    var axeRadius = 22f
+        private set
+    var axeLifetime = 1.7f
+        private set
+    var axePierce = 1
+        private set
+    var knifeLevel = 0
+        private set
+    var knifeCount = 0
+        private set
+    var knifeDamage = 0f
+        private set
+    var knifeInterval = 1.35f
+        private set
+    var knifeSpeed = 720f
+        private set
+    var knifeRadius = 18f
+        private set
+    var knifeLifetime = 0.95f
+        private set
+    var spearLevel = 0
+        private set
+    var spearCount = 0
+        private set
+    var spearDamage = 0f
+        private set
+    var spearInterval = 2.25f
+        private set
+    var spearSpeed = 500f
+        private set
+    var spearRadius = 24f
+        private set
+    var spearLifetime = 1.2f
+        private set
+    var spearPierce = 2
+        private set
     private var exp = 0
 
     val radius: Float
@@ -152,7 +198,7 @@ class Player(
     }
 
     fun upgradeBlades() {
-        // 칼날은 레벨이 오를수록 개수, 피해량, 회전 반경을 함께 키웁니다.
+        // Blade upgrades widen the orbit and let the weapon stay relevant in the endless loop.
         bladeLevel += 1
         bladeCount = when (bladeLevel) {
             1 -> 1
@@ -167,11 +213,56 @@ class Player(
     }
 
     fun upgradeAura() {
-        // 오라는 범위와 틱 속도를 함께 보정해 근접 생존 수단으로 씁니다.
+        // Aura scales as a close-range stabilizer so the player can survive swarm spikes.
         auraLevel += 1
         auraRadius = if (auraRadius == 0f) 72f else auraRadius + 18f
         auraDamage += 5f
         auraTickInterval = (auraTickInterval - 0.06f).coerceAtLeast(0.28f)
+    }
+
+    fun upgradeAxe() {
+        // Axes are slow, wide, and piercing to give the loadout a chunky crowd-clear tool.
+        axeLevel += 1
+        axeCount = when (axeLevel) {
+            1 -> 1
+            2 -> 2
+            3 -> 2
+            else -> 3
+        }
+        axeDamage += 9f
+        axeInterval = (axeInterval - 0.18f).coerceAtLeast(0.95f)
+        axeSpeed = (axeSpeed + 18f).coerceAtMost(460f)
+        axeRadius = (axeRadius + 2f).coerceAtMost(30f)
+        axeLifetime = (axeLifetime + 0.1f).coerceAtMost(2.2f)
+        axePierce = (axePierce + 1).coerceAtMost(5)
+    }
+
+    fun upgradeKnife() {
+        // Knives lean into rapid bursts so the player has a sharp single-target option.
+        knifeLevel += 1
+        knifeCount = when (knifeLevel) {
+            1 -> 2
+            2 -> 3
+            3 -> 4
+            else -> 5
+        }
+        knifeDamage += 6f
+        knifeInterval = (knifeInterval - 0.16f).coerceAtLeast(0.55f)
+        knifeSpeed = (knifeSpeed + 26f).coerceAtMost(900f)
+        knifeRadius = (knifeRadius + 1.2f).coerceAtMost(22f)
+        knifeLifetime = (knifeLifetime + 0.04f).coerceAtMost(1.25f)
+    }
+
+    fun upgradeSpear() {
+        // Spears stay slower but hit hard and pierce lanes, which helps against tanks and ogres.
+        spearLevel += 1
+        spearCount = if (spearLevel >= 3) 2 else 1
+        spearDamage += 12f
+        spearInterval = (spearInterval - 0.20f).coerceAtLeast(1.1f)
+        spearSpeed = (spearSpeed + 24f).coerceAtMost(620f)
+        spearRadius = (spearRadius + 2.5f).coerceAtMost(32f)
+        spearLifetime = (spearLifetime + 0.08f).coerceAtMost(1.55f)
+        spearPierce = (spearPierce + 1).coerceAtMost(6)
     }
 
     fun expRatio(): Float {
