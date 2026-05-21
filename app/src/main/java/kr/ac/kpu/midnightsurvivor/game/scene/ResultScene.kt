@@ -5,6 +5,8 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.view.MotionEvent
+import kr.ac.kpu.midnightsurvivor.game.audio.GameAudio
+import kr.ac.kpu.midnightsurvivor.game.audio.GameSfx
 import kr.ac.kpu.midnightsurvivor.game.framework.MainGame
 import kr.ac.kpu.midnightsurvivor.game.framework.Scene
 
@@ -16,6 +18,11 @@ class ResultScene(
     private val victory: Boolean,
 ) : Scene(game) {
     private val restartButton = RectF()
+
+    override fun onEnter() {
+        // 결과 화면에서는 승패에 맞는 짧은 마무리 사운드만 재생합니다.
+        GameAudio.play(if (victory) GameSfx.VICTORY else GameSfx.DEFEAT)
+    }
 
     override fun onResize(width: Float, height: Float) {
         super.onResize(width, height)

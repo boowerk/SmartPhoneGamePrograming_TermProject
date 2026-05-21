@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.view.MotionEvent
 import android.view.View
+import kr.ac.kpu.midnightsurvivor.game.audio.GameAudio
 import kr.ac.kpu.midnightsurvivor.game.graphics.SpriteAssets
 import kr.ac.kpu.midnightsurvivor.game.framework.MainGame
 
@@ -13,6 +14,7 @@ class GameView(context: Context) : View(context) {
 
     init {
         SpriteAssets.initialize(resources)
+        GameAudio.initialize()
         isFocusable = true
         isClickable = true
     }
@@ -40,5 +42,11 @@ class GameView(context: Context) : View(context) {
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         return game.onTouchEvent(event) || super.onTouchEvent(event)
+    }
+
+    override fun onDetachedFromWindow() {
+        // View가 내려갈 때 톤 제너레이터를 정리해 재진입 시 중복 점유를 피합니다.
+        GameAudio.release()
+        super.onDetachedFromWindow()
     }
 }

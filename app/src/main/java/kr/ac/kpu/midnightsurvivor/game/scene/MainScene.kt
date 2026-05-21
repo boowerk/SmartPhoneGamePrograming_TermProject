@@ -10,10 +10,13 @@ import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.sin
 import kotlin.random.Random
+import kr.ac.kpu.midnightsurvivor.game.audio.GameAudio
+import kr.ac.kpu.midnightsurvivor.game.audio.GameSfx
 import kr.ac.kpu.midnightsurvivor.game.framework.MainGame
 import kr.ac.kpu.midnightsurvivor.game.framework.Scene
 import kr.ac.kpu.midnightsurvivor.game.graphics.SpriteAssets
 import kr.ac.kpu.midnightsurvivor.game.objects.BossEnemy
+import kr.ac.kpu.midnightsurvivor.game.objects.CombatEffect
 import kr.ac.kpu.midnightsurvivor.game.objects.Enemy
 import kr.ac.kpu.midnightsurvivor.game.objects.EnemyProjectile
 import kr.ac.kpu.midnightsurvivor.game.objects.EnemyShot
@@ -46,10 +49,12 @@ class MainScene(game: MainGame) : Scene(game) {
     private val enemies = mutableListOf<Enemy>()
     private val projectiles = mutableListOf<Projectile>()
     private val enemyProjectiles = mutableListOf<EnemyProjectile>()
+    private val effects = mutableListOf<CombatEffect>()
     private val gems = mutableListOf<ExpGem>()
     private val enemyPool = ArrayDeque<Enemy>()
     private val projectilePool = ArrayDeque<Projectile>()
     private val enemyProjectilePool = ArrayDeque<EnemyProjectile>()
+    private val effectPool = ArrayDeque<CombatEffect>()
     private val gemPool = ArrayDeque<ExpGem>()
     private val stars = mutableListOf<Pair<Float, Float>>()
     private val upgradeRanks = mutableMapOf<String, Int>()
@@ -143,6 +148,7 @@ class MainScene(game: MainGame) : Scene(game) {
         updateBlades(deltaTime)
         updateAura(deltaTime)
         updateGems(deltaTime)
+        updateEffects(deltaTime)
         recycleInactiveObjects()
 
         if (!bossSpawned && elapsedTime >= bossSpawnTime) {
@@ -176,6 +182,8 @@ class MainScene(game: MainGame) : Scene(game) {
             enemy.updateToward(player.x, player.y, deltaTime)?.let(::obtainEnemyProjectile)
             if (isColliding(player.x, player.y, player.radius, enemy.x, enemy.y, enemy.radius)) {
                 if (player.takeDamage(enemy.damage)) {
+                    spawnEffect(player.x, player.y, Color.parseColor("#FF6B6B"), 18f, 54f, 0.20f, 5f)
+                    GameAudio.play(GameSfx.PLAYER_HIT)
                     val dx = player.x - enemy.x
                     val dy = player.y - enemy.y
                     val distance = hypot(dx, dy).coerceAtLeast(1f)
@@ -202,10 +210,12 @@ class MainScene(game: MainGame) : Scene(game) {
         }
 
         if (isColliding(player.x, player.y, player.radius, activeBoss.x, activeBoss.y, activeBoss.radius)) {
-            if (player.takeDamage(18f)) {
-                val dx = player.x - activeBoss.x
-                val dy = player.y - activeBoss.y
-                val distance = hypot(dx, dy).coerceAtLeast(1f)
+                if (player.takeDamage(18f)) {
+                    spawnEffect(player.x, player.y, Color.parseColor("#FF6B6B"), 22f, 68f, 0.22f, 6f)
+                    GameAudio.play(GameSfx.PLAYER_HIT)
+                    val dx = player.x - activeBoss.x
+                    val dy = player.y - activeBoss.y
+                    val distance = hypot(dx, dy).coerceAtLeast(1f)
                 player.nudge((dx / distance) * 48f, (dy / distance) * 48f)
                 player.clampToBounds(worldWidth, worldHeight)
                 updateCamera()
@@ -245,6 +255,8 @@ class MainScene(game: MainGame) : Scene(game) {
             if (isColliding(player.x, player.y, player.radius, projectile.x, projectile.y, projectile.radius)) {
                 projectile.isActive = false
                 if (player.takeDamage(projectile.damage)) {
+                    spawnEffect(player.x, player.y, Color.parseColor("#FF8F70"), 12f, 44f, 0.18f, 4f)
+                    GameAudio.play(GameSfx.PLAYER_HIT)
                     val dx = player.x - projectile.x
                     val dy = player.y - projectile.y
                     val distance = hypot(dx, dy).coerceAtLeast(1f)
@@ -339,7 +351,15 @@ class MainScene(game: MainGame) : Scene(game) {
         }
 
         if (leveledUp) {
+            spawnEffect(player.x, player.y, Color.parseColor("#80FFEA"), 28f, 120f, 0.45f, 6f)
+            GameAudio.play(GameSfx.LEVEL_UP)
             game.pushScene(LevelUpScene(game, buildUpgradeOptions(), ::applyUpgrade))
+        }
+    }
+
+    private fun updateEffects(deltaTime: Float) {
+        effects.forEach { effect ->
+            effect.update(deltaTime)
         }
     }
 
@@ -543,6 +563,7 @@ class MainScene(game: MainGame) : Scene(game) {
         enemyProjectiles.forEach { it.draw(canvas, paint) }
         enemies.forEach { it.draw(canvas, paint) }
         boss?.takeIf { it.isActive }?.draw(canvas, paint)
+        effects.forEach { it.draw(canvas, paint) }
         drawBlades(canvas)
         player.draw(canvas, paint)
         canvas.restore()
@@ -786,11 +807,14 @@ class MainScene(game: MainGame) : Scene(game) {
 
     private fun handleEnemyDefeat(enemy: Enemy) {
         defeatedEnemies += 1
+        spawnEffect(enemy.x, enemy.y, Color.parseColor("#F6C85F"), 10f, 32f, 0.20f, 4f)
         obtainGem(enemy.x, enemy.y, enemy.expReward)
     }
 
     private fun handleBossDefeat() {
         if (bossDefeated) return
+        boss?.let { spawnEffect(it.x, it.y, Color.parseColor("#FF7A90"), 42f, 180f, 0.65f, 8f) }
+        GameAudio.play(GameSfx.BOSS_CLEAR)
         boss?.isActive = false
         boss = null
         bossDefeated = true
@@ -845,11 +869,27 @@ class MainScene(game: MainGame) : Scene(game) {
         gems += gem
     }
 
+    private fun spawnEffect(
+        x: Float,
+        y: Float,
+        color: Int,
+        startRadius: Float,
+        endRadius: Float,
+        lifeTime: Float,
+        strokeWidth: Float,
+    ) {
+        val effect = effectPool.removeLastOrNull()
+            ?: CombatEffect(x, y, color, startRadius, endRadius, lifeTime, strokeWidth)
+        effect.reset(x, y, color, startRadius, endRadius, lifeTime, strokeWidth)
+        effects += effect
+    }
+
     private fun recycleInactiveObjects() {
         // 비활성 객체를 프레임 끝에 한 번에 회수해 컬렉션 순회를 단순하게 유지합니다.
         recycleList(enemies, enemyPool)
         recycleList(projectiles, projectilePool)
         recycleList(enemyProjectiles, enemyProjectilePool)
+        recycleList(effects, effectPool)
         recycleList(gems, gemPool)
     }
 
@@ -861,6 +901,7 @@ class MainScene(game: MainGame) : Scene(game) {
                 is Enemy -> item.isActive
                 is Projectile -> item.isActive
                 is EnemyProjectile -> item.isActive
+                is CombatEffect -> item.isActive
                 is ExpGem -> item.isActive
                 else -> true
             }
@@ -879,6 +920,8 @@ class MainScene(game: MainGame) : Scene(game) {
         boss = nextBoss
         bossSpawned = true
         bossIntroTimer = 2.4f
+        spawnEffect(spawnX, spawnY, Color.parseColor("#FF7A90"), 34f, 140f, 0.55f, 7f)
+        GameAudio.play(GameSfx.BOSS_ALERT)
     }
 
     private fun spawnBossMinions(count: Int) {
