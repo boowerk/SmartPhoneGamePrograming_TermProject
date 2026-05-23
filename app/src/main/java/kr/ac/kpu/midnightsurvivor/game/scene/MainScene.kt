@@ -115,6 +115,10 @@ class MainScene(game: MainGame) : Scene(game) {
     private var bossSpawned = false
     private var bossDefeated = false
     private var bossIntroTimer = 0f
+    private var highestWaveReached = 1
+    private var projectileShotsFired = 0
+    private var pickupsCollected = 0
+    private var selectedUpgrades = 0
     private val stageDuration = 300f
     private val bossSpawnTime = 240f
 
@@ -139,6 +143,7 @@ class MainScene(game: MainGame) : Scene(game) {
         spawnTimer -= deltaTime
         shotTimer -= deltaTime
         bossIntroTimer = (bossIntroTimer - deltaTime).coerceAtLeast(0f)
+        highestWaveReached = maxOf(highestWaveReached, currentWaveIndex() + 1)
 
         updatePlayer(deltaTime)
         updateEnemies(deltaTime)
@@ -162,9 +167,9 @@ class MainScene(game: MainGame) : Scene(game) {
         }
 
         if (player.hp <= 0f) {
-            game.replaceScene(ResultScene(game, elapsedTime, defeatedEnemies, player.level, false))
+            game.replaceScene(ResultScene(game, buildRunSummary(false)))
         } else if (bossDefeated || (elapsedTime >= stageDuration && !bossSpawned)) {
-            game.replaceScene(ResultScene(game, elapsedTime, defeatedEnemies, player.level, true))
+            game.replaceScene(ResultScene(game, buildRunSummary(true)))
         }
     }
 
@@ -344,6 +349,7 @@ class MainScene(game: MainGame) : Scene(game) {
             gem.updateToward(player.x, player.y, player.pickupRadius, deltaTime)
             if (isColliding(player.x, player.y, player.radius, gem.x, gem.y, gem.radius)) {
                 gem.isActive = false
+                pickupsCollected += 1
                 if (!leveledUp && player.gainExp(gem.amount)) {
                     leveledUp = true
                 }
@@ -445,6 +451,7 @@ class MainScene(game: MainGame) : Scene(game) {
         val spreadStep = 0.16f
         val count = player.projectileCount
         val startOffset = -spreadStep * (count - 1) * 0.5f
+        projectileShotsFired += count
         repeat(count) { index ->
             val projectileAngle = angle + startOffset + spreadStep * index
             obtainProjectile(
@@ -500,6 +507,7 @@ class MainScene(game: MainGame) : Scene(game) {
     }
 
     private fun applyUpgrade(option: UpgradeOption) {
+        selectedUpgrades += 1
         when (option.id) {
             "speed" -> {
                 upgradeRanks.bump(option.id)
@@ -821,9 +829,36 @@ class MainScene(game: MainGame) : Scene(game) {
         defeatedEnemies += 12
     }
 
+    private fun buildRunSummary(victory: Boolean): RunSummary {
+        val deepestPhase = if (bossSpawned) {
+            if (bossDefeated) "BOSS CLEARED" else "BOSS NIGHT"
+        } else {
+            "WAVE $highestWaveReached"
+        }
+        return RunSummary(
+            survivedTime = elapsedTime,
+            defeatedEnemies = defeatedEnemies,
+            reachedLevel = player.level,
+            victory = victory,
+            bossEncountered = bossSpawned,
+            bossDefeated = bossDefeated,
+            deepestPhase = deepestPhase,
+            projectilesFired = projectileShotsFired,
+            pickupsCollected = pickupsCollected,
+            selectedUpgrades = selectedUpgrades,
+            weaponLoadout = "Gun ${player.projectileCount} / Blade ${player.bladeLevel} / Aura ${player.auraLevel}",
+        )
+    }
+
     private fun currentWaveDefinition(): WaveDefinition {
         return waveDefinitions.firstOrNull { elapsedTime >= it.startTime && elapsedTime < it.endTime }
             ?: waveDefinitions.last()
+    }
+
+    private fun currentWaveIndex(): Int {
+        return waveDefinitions.indexOfFirst { elapsedTime >= it.startTime && elapsedTime < it.endTime }
+            .takeIf { it >= 0 }
+            ?: (waveDefinitions.lastIndex)
     }
 
     private fun obtainEnemy(
