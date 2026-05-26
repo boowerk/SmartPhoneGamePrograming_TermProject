@@ -20,8 +20,8 @@ class BossEnemy(
     x: Float,
     y: Float,
 ) : GameObject(x, y) {
-    private var hp = 420f
-    private var maxHp = 420f
+    private var hp = 320f
+    private var maxHp = 320f
     private var attackTimer = 1.8f
     private var volleyTimer = 0.8f
     private var summonTimer = 5.8f
@@ -36,8 +36,8 @@ class BossEnemy(
         // 보스전은 한 번뿐이지만 재시작 시 상태가 섞이지 않도록 명시적으로 초기화합니다.
         this.x = x
         this.y = y
-        hp = 420f
-        maxHp = 420f
+        hp = 320f
+        maxHp = 320f
         attackTimer = 1.8f
         volleyTimer = 0.8f
         summonTimer = 5.8f
@@ -90,7 +90,7 @@ class BossEnemy(
                     radius = 12f,
                 )
             }
-            attackTimer = if (enraged) 1.75f else 2.25f
+            attackTimer = if (enraged) 1.95f else 2.35f
         }
 
         if (volleyTimer <= 0f) {
@@ -111,8 +111,8 @@ class BossEnemy(
         }
 
         val summonCount = if (summonTimer <= 0f) {
-            summonTimer = if (enraged) 4.8f else 6.2f
-            if (enraged) 3 else 2
+            summonTimer = if (enraged) 5.2f else 6.6f
+            if (enraged) 2 else 1
         } else {
             0
         }

@@ -23,6 +23,7 @@ import kr.ac.kpu.midnightsurvivor.game.objects.EnemyShot
 import kr.ac.kpu.midnightsurvivor.game.objects.EnemyType
 import kr.ac.kpu.midnightsurvivor.game.objects.ExpGem
 import kr.ac.kpu.midnightsurvivor.game.objects.Player
+import kr.ac.kpu.midnightsurvivor.game.objects.PickupKind
 import kr.ac.kpu.midnightsurvivor.game.objects.Projectile
 
 class MainScene(game: MainGame) : Scene(game) {
@@ -93,7 +94,7 @@ class MainScene(game: MainGame) : Scene(game) {
         WaveDefinition("WAVE 2", 45f, 95f, 1.05f, 2, 15, listOf(EnemyType.CHASER, EnemyType.DASHER)),
         WaveDefinition("WAVE 3", 95f, 155f, 0.92f, 2, 18, listOf(EnemyType.CHASER, EnemyType.DASHER, EnemyType.TANK)),
         WaveDefinition("WAVE 4", 155f, 220f, 0.80f, 3, 22, listOf(EnemyType.DASHER, EnemyType.TANK, EnemyType.RANGER)),
-        WaveDefinition("WAVE 5", 220f, 300f, 0.70f, 3, 25, listOf(EnemyType.CHASER, EnemyType.DASHER, EnemyType.TANK, EnemyType.RANGER)),
+        WaveDefinition("WAVE 5", 220f, 270f, 0.72f, 3, 24, listOf(EnemyType.CHASER, EnemyType.DASHER, EnemyType.TANK, EnemyType.RANGER)),
     )
     private var initialized = false
     private var dragActive = false
@@ -120,7 +121,7 @@ class MainScene(game: MainGame) : Scene(game) {
     private var pickupsCollected = 0
     private var selectedUpgrades = 0
     private val stageDuration = 300f
-    private val bossSpawnTime = 240f
+    private val bossSpawnTime = 270f
 
     override fun onResize(width: Float, height: Float) {
         super.onResize(width, height)
@@ -166,10 +167,13 @@ class MainScene(game: MainGame) : Scene(game) {
             fireProjectile()
         }
 
+        // 8주차 밸런싱: 보스를 30초 안에 마무리하지 못하면 패배 처리해 러닝타임을 안정화합니다.
         if (player.hp <= 0f) {
             game.replaceScene(ResultScene(game, buildRunSummary(false)))
         } else if (bossDefeated || (elapsedTime >= stageDuration && !bossSpawned)) {
             game.replaceScene(ResultScene(game, buildRunSummary(true)))
+        } else if (bossSpawned && !bossDefeated && elapsedTime >= stageDuration) {
+            game.replaceScene(ResultScene(game, buildRunSummary(false)))
         }
     }
 
@@ -350,8 +354,17 @@ class MainScene(game: MainGame) : Scene(game) {
             if (isColliding(player.x, player.y, player.radius, gem.x, gem.y, gem.radius)) {
                 gem.isActive = false
                 pickupsCollected += 1
-                if (!leveledUp && player.gainExp(gem.amount)) {
-                    leveledUp = true
+                when (gem.kind) {
+                    PickupKind.EXP -> {
+                        if (!leveledUp && player.gainExp(gem.amount)) {
+                            leveledUp = true
+                        }
+                    }
+
+                    PickupKind.HEAL -> {
+                        player.heal(gem.amount.toFloat())
+                        spawnEffect(player.x, player.y, Color.parseColor("#FF79C6"), 16f, 60f, 0.24f, 5f)
+                    }
                 }
             }
         }
@@ -468,9 +481,9 @@ class MainScene(game: MainGame) : Scene(game) {
     }
 
     private fun buildUpgradeOptions(): List<UpgradeOption> {
-        val available = upgradeDefinitions.filter { definition ->
+        val available = prioritizedUpgrades().filter { definition ->
             upgradeRanks.getOrDefault(definition.id, 0) < definition.maxRank
-        }.shuffled()
+        }
 
         val selected = available.take(3).map { definition ->
             val nextRank = upgradeRanks.getOrDefault(definition.id, 0) + 1
@@ -623,6 +636,11 @@ class MainScene(game: MainGame) : Scene(game) {
     private fun drawHud(canvas: Canvas) {
         val currentWave = currentWaveDefinition()
         val waveLabel = if (bossSpawned && !bossDefeated) "BOSS NIGHT" else currentWave.label
+        val objectiveLabel = if (bossSpawned && !bossDefeated) {
+            "Boss LIVE"
+        } else {
+            "Boss ETA ${maxOf(0f, bossSpawnTime - elapsedTime).toInt()}s"
+        }
         paint.textAlign = Paint.Align.LEFT
         paint.style = Paint.Style.FILL
         paint.color = Color.WHITE
@@ -654,11 +672,11 @@ class MainScene(game: MainGame) : Scene(game) {
         paint.color = Color.parseColor("#C9D1D9")
         paint.textSize = 24f
         canvas.drawText("World ${player.x.toInt()}, ${player.y.toInt()}", width - 24f, 44f, paint)
-        canvas.drawText("Enemies ${enemies.size}", width - 24f, 76f, paint)
+        canvas.drawText("Enemies ${enemies.size + if (boss?.isActive == true) 1 else 0}", width - 24f, 76f, paint)
         canvas.drawText("Shots ${player.projectileCount}  Rate ${"%.2f".format(player.attackInterval)}", width - 24f, 108f, paint)
         canvas.drawText("Blade ${player.bladeLevel}  Aura ${player.auraLevel}", width - 24f, 140f, paint)
         canvas.drawText("Magnet ${player.pickupRadius.toInt()}", width - 24f, 172f, paint)
-        canvas.drawText("Boss ETA ${maxOf(0f, bossSpawnTime - elapsedTime).toInt()}s", width - 24f, 204f, paint)
+        canvas.drawText(objectiveLabel, width - 24f, 204f, paint)
 
         boss?.takeIf { it.isActive }?.let { activeBoss ->
             val bossBarTop = height - 76f
@@ -816,7 +834,10 @@ class MainScene(game: MainGame) : Scene(game) {
     private fun handleEnemyDefeat(enemy: Enemy) {
         defeatedEnemies += 1
         spawnEffect(enemy.x, enemy.y, Color.parseColor("#F6C85F"), 10f, 32f, 0.20f, 4f)
-        obtainGem(enemy.x, enemy.y, enemy.expReward)
+        obtainGem(enemy.x, enemy.y, enemy.expReward, PickupKind.EXP)
+        if (shouldDropHeal(enemy)) {
+            obtainGem(enemy.x + 10f, enemy.y - 10f, 18, PickupKind.HEAL)
+        }
     }
 
     private fun handleBossDefeat() {
@@ -831,7 +852,7 @@ class MainScene(game: MainGame) : Scene(game) {
 
     private fun buildRunSummary(victory: Boolean): RunSummary {
         val deepestPhase = if (bossSpawned) {
-            if (bossDefeated) "BOSS CLEARED" else "BOSS NIGHT"
+            if (bossDefeated) "BOSS CLEARED" else "BOSS FAILED"
         } else {
             "WAVE $highestWaveReached"
         }
@@ -898,9 +919,9 @@ class MainScene(game: MainGame) : Scene(game) {
         enemyProjectiles += projectile
     }
 
-    private fun obtainGem(x: Float, y: Float, amount: Int) {
-        val gem = gemPool.removeLastOrNull() ?: ExpGem(x, y, amount)
-        gem.reset(x, y, amount)
+    private fun obtainGem(x: Float, y: Float, amount: Int, kind: PickupKind = PickupKind.EXP) {
+        val gem = gemPool.removeLastOrNull() ?: ExpGem(x, y, amount, kind)
+        gem.reset(x, y, amount, kind)
         gems += gem
     }
 
@@ -965,17 +986,43 @@ class MainScene(game: MainGame) : Scene(game) {
             val angle = (Math.PI * 2.0 * index / count).toFloat() + elapsedTime * 0.3f
             val spawnX = (activeBoss.x + cos(angle) * 120f).coerceIn(40f, worldWidth - 40f)
             val spawnY = (activeBoss.y + sin(angle) * 120f).coerceIn(40f, worldHeight - 40f)
-            val enemyType = if (index % 2 == 0) EnemyType.DASHER else EnemyType.TANK
+            val enemyType = if (index % 2 == 0) EnemyType.DASHER else EnemyType.RANGER
             obtainEnemy(
                 x = spawnX,
                 y = spawnY,
                 type = enemyType,
-                moveSpeed = if (enemyType == EnemyType.DASHER) 150f else 92f,
-                hp = if (enemyType == EnemyType.DASHER) 26f else 52f,
-                damage = if (enemyType == EnemyType.DASHER) 15f else 18f,
-                expReward = if (enemyType == EnemyType.DASHER) 2 else 3,
+                moveSpeed = if (enemyType == EnemyType.DASHER) 150f else 96f,
+                hp = if (enemyType == EnemyType.DASHER) 24f else 26f,
+                damage = if (enemyType == EnemyType.DASHER) 15f else 12f,
+                expReward = 2,
             )
         }
+    }
+
+    private fun prioritizedUpgrades(): List<UpgradeDefinition> {
+        val prioritized = mutableListOf<UpgradeDefinition>()
+
+        // 아직 해금하지 않은 무기는 먼저 보여 줘서 발표용 빌드에서 다양한 플레이가 빠르게 나오게 합니다.
+        if (upgradeRanks.getOrDefault("blade", 0) == 0) {
+            prioritized += upgradeDefinitions.first { it.id == "blade" }
+        }
+        if (player.level >= 3 && upgradeRanks.getOrDefault("aura", 0) == 0) {
+            prioritized += upgradeDefinitions.first { it.id == "aura" }
+        }
+
+        return prioritized + upgradeDefinitions.shuffled().filterNot { candidate ->
+            prioritized.any { it.id == candidate.id }
+        }
+    }
+
+    private fun shouldDropHeal(enemy: Enemy): Boolean {
+        val dropChance = when (enemy.type) {
+            EnemyType.TANK -> 0.18f
+            EnemyType.RANGER -> 0.10f
+            EnemyType.DASHER -> 0.06f
+            EnemyType.CHASER -> 0.03f
+        }
+        return player.hp < player.maxHp * 0.75f && Random.nextFloat() < dropChance
     }
 
     private fun MutableMap<String, Int>.bump(id: String) {

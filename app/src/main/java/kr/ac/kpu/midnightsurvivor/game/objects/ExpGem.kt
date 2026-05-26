@@ -7,25 +7,38 @@ import kotlin.math.hypot
 import kr.ac.kpu.midnightsurvivor.game.framework.GameObject
 import kr.ac.kpu.midnightsurvivor.game.framework.Sprite
 
+enum class PickupKind {
+    EXP,
+    HEAL,
+}
+
 class ExpGem(
     x: Float,
     y: Float,
     amount: Int = 1,
+    kind: PickupKind = PickupKind.EXP,
 ) : GameObject(x, y) {
     var amount: Int = amount
         private set
-    private val sprite = Sprite(Color.parseColor("#50FA7B"), 12f)
+    var kind: PickupKind = kind
+        private set
+    private var sprite = Sprite(Color.parseColor("#50FA7B"), 12f)
 
     val radius: Float
         get() = sprite.radius
 
     override fun update(deltaTime: Float) = Unit
 
-    fun reset(x: Float, y: Float, amount: Int) {
-        // 경험치 오브는 수량만 바뀌므로 좌표와 보상량만 되살려 재사용합니다.
+    fun reset(x: Float, y: Float, amount: Int, kind: PickupKind) {
+        // 회복 오브까지 함께 재사용할 수 있게 종류와 색상을 같이 되살립니다.
         this.x = x
         this.y = y
         this.amount = amount
+        this.kind = kind
+        this.sprite = when (kind) {
+            PickupKind.EXP -> Sprite(Color.parseColor("#50FA7B"), 12f)
+            PickupKind.HEAL -> Sprite(Color.parseColor("#FF79C6"), 14f)
+        }
         isActive = true
     }
 
@@ -43,5 +56,13 @@ class ExpGem(
         paint.style = Paint.Style.FILL
         paint.color = sprite.color
         canvas.drawCircle(x, y, sprite.radius, paint)
+
+        if (kind == PickupKind.HEAL) {
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 3f
+            paint.color = Color.WHITE
+            canvas.drawLine(x - 6f, y, x + 6f, y, paint)
+            canvas.drawLine(x, y - 6f, x, y + 6f, paint)
+        }
     }
 }
