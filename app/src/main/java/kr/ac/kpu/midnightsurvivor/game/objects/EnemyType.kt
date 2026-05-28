@@ -5,4 +5,7 @@ enum class EnemyType {
     DASHER,
     TANK,
     RANGER,
+    SKELETON,
+    SHAMAN,
+    OGRE,
 }

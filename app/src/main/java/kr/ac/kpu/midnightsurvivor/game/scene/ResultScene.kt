@@ -73,6 +73,8 @@ class ResultScene(
         lineY += 38f
         canvas.drawText("Upgrades  ${summary.selectedUpgrades}", textLeft, lineY, paint)
         lineY += 38f
+        canvas.drawText("Bosses  ${summary.bossesDefeatedCount}", textLeft, lineY, paint)
+        lineY += 38f
         canvas.drawText(
             "Boss  ${if (summary.bossDefeated) "Defeated" else if (summary.bossEncountered) "Reached" else "Not Spawned"}",
             textLeft,

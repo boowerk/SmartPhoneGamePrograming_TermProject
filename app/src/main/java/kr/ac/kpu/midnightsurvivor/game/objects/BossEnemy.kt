@@ -28,19 +28,24 @@ class BossEnemy(
     private var animationTime = 0f
     private var orbitDirection = 1f
     private var facingLeft = false
+    private var difficultyScale = 1f
+    var bossIndex = 1
+        private set
 
     val radius: Float
         get() = 56f
 
-    fun reset(x: Float, y: Float) {
-        // 보스전은 한 번뿐이지만 재시작 시 상태가 섞이지 않도록 명시적으로 초기화합니다.
+    fun reset(x: Float, y: Float, bossIndex: Int = 1) {
+        // Each new boss cycle gets modestly stronger so endless mode keeps climbing.
         this.x = x
         this.y = y
-        hp = 320f
-        maxHp = 320f
-        attackTimer = 1.8f
-        volleyTimer = 0.8f
-        summonTimer = 5.8f
+        this.bossIndex = bossIndex
+        difficultyScale = 1f + (bossIndex - 1) * 0.18f
+        hp = 320f * difficultyScale
+        maxHp = hp
+        attackTimer = (1.8f - (bossIndex - 1) * 0.03f).coerceAtLeast(1.05f)
+        volleyTimer = (0.8f - (bossIndex - 1) * 0.02f).coerceAtLeast(0.45f)
+        summonTimer = (5.8f - (bossIndex - 1) * 0.10f).coerceAtLeast(3.6f)
         animationTime = 0f
         orbitDirection = 1f
         facingLeft = false
@@ -59,9 +64,10 @@ class BossEnemy(
         val tangentX = -dirY * orbitDirection
         val tangentY = dirX * orbitDirection
         val enraged = hpRatio() < 0.5f
-        val speedScale = if (enraged) 1.22f else 1f
+        val movementScale = 1f + (difficultyScale - 1f) * 0.30f
+        val speedScale = if (enraged) 1.22f * movementScale else movementScale
 
-        // 보스는 플레이어 주위를 감싸듯 움직이며 거리 유지와 측면 압박을 동시에 합니다.
+        // The boss keeps circling pressure on the player instead of standing still between volleys.
         val chaseWeight = when {
             distance > 260f -> 0.92f
             distance < 170f -> -0.62f
@@ -77,8 +83,8 @@ class BossEnemy(
         summonTimer -= deltaTime
 
         if (attackTimer <= 0f) {
-            val ringCount = if (enraged) 12 else 8
-            val ringSpeed = if (enraged) 240f else 200f
+            val ringCount = (if (enraged) 12 else 8) + ((bossIndex - 1) / 2)
+            val ringSpeed = if (enraged) 240f + bossIndex * 10f else 200f + bossIndex * 8f
             repeat(ringCount) { index ->
                 val angle = animationTime * 0.9f + (Math.PI * 2.0 * index / ringCount).toFloat()
                 shots += EnemyShot(
@@ -86,33 +92,33 @@ class BossEnemy(
                     y = y - 8f,
                     velocityX = cos(angle) * ringSpeed,
                     velocityY = sin(angle) * ringSpeed,
-                    damage = if (enraged) 15f else 12f,
+                    damage = (if (enraged) 15f else 12f) + bossIndex * 0.8f,
                     radius = 12f,
                 )
             }
-            attackTimer = if (enraged) 1.95f else 2.35f
+            attackTimer = if (enraged) 1.85f else 2.25f
         }
 
         if (volleyTimer <= 0f) {
             val baseAngle = atan2(dy, dx)
-            val offsets = if (enraged) listOf(-0.28f, -0.1f, 0.1f, 0.28f) else listOf(-0.22f, 0f, 0.22f)
+            val offsets = if (enraged) listOf(-0.30f, -0.12f, 0.12f, 0.30f) else listOf(-0.22f, 0f, 0.22f)
             offsets.forEach { offset ->
                 val shotAngle = baseAngle + offset
                 shots += EnemyShot(
                     x = x,
                     y = y - 10f,
-                    velocityX = cos(shotAngle) * 280f,
-                    velocityY = sin(shotAngle) * 280f,
-                    damage = if (enraged) 13f else 10f,
+                    velocityX = cos(shotAngle) * (280f + bossIndex * 8f),
+                    velocityY = sin(shotAngle) * (280f + bossIndex * 8f),
+                    damage = (if (enraged) 13f else 10f) + bossIndex * 0.6f,
                     radius = 10f,
                 )
             }
-            volleyTimer = if (enraged) 1.05f else 1.45f
+            volleyTimer = if (enraged) 0.98f else 1.38f
         }
 
         val summonCount = if (summonTimer <= 0f) {
-            summonTimer = if (enraged) 5.2f else 6.6f
-            if (enraged) 2 else 1
+            summonTimer = if (enraged) 4.9f else 6.2f
+            (if (enraged) 2 else 1) + ((bossIndex - 1) / 3)
         } else {
             0
         }

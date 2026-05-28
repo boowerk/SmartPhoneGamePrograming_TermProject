@@ -45,6 +45,18 @@ class MainScene(game: MainGame) : Scene(game) {
         val enemyTypes: List<EnemyType>,
     )
 
+    private data class EnemySpawnProfile(
+        val moveSpeed: Float,
+        val hp: Float,
+        val damage: Float,
+        val expReward: Int,
+    )
+
+    private data class TargetInfo(
+        val x: Float,
+        val y: Float,
+    )
+
     private lateinit var player: Player
     private var boss: BossEnemy? = null
     private val enemies = mutableListOf<Enemy>()
@@ -87,14 +99,23 @@ class MainScene(game: MainGame) : Scene(game) {
         UpgradeDefinition("aura", "Moon Aura", 4, Color.parseColor("#80FFEA")) { rank ->
             "Pulse damage around the player  |  next rank $rank"
         },
+        UpgradeDefinition("axe", "Storm Axe", 4, Color.parseColor("#FF9F1C")) { rank ->
+            "Throw spinning axes with pierce and higher damage  |  next rank $rank"
+        },
+        UpgradeDefinition("knife", "Moon Knife", 4, Color.parseColor("#C9D1D9")) { rank ->
+            "Release rapid knife bursts toward the nearest threat  |  next rank $rank"
+        },
+        UpgradeDefinition("spear", "Phantom Spear", 4, Color.parseColor("#8BE9FD")) { rank ->
+            "Launch heavy spears that punch through enemy lines  |  next rank $rank"
+        },
     )
     private val waveDefinitions = listOf(
         // 6주차 웨이브 테이블: 시간대별 적 조합과 동시 출현 수를 단계적으로 늘립니다.
-        WaveDefinition("WAVE 1", 0f, 45f, 1.20f, 1, 12, listOf(EnemyType.CHASER)),
-        WaveDefinition("WAVE 2", 45f, 95f, 1.05f, 2, 15, listOf(EnemyType.CHASER, EnemyType.DASHER)),
-        WaveDefinition("WAVE 3", 95f, 155f, 0.92f, 2, 18, listOf(EnemyType.CHASER, EnemyType.DASHER, EnemyType.TANK)),
-        WaveDefinition("WAVE 4", 155f, 220f, 0.80f, 3, 22, listOf(EnemyType.DASHER, EnemyType.TANK, EnemyType.RANGER)),
-        WaveDefinition("WAVE 5", 220f, 270f, 0.72f, 3, 24, listOf(EnemyType.CHASER, EnemyType.DASHER, EnemyType.TANK, EnemyType.RANGER)),
+        WaveDefinition("WAVE 1", 0f, 40f, 1.18f, 1, 12, listOf(EnemyType.CHASER, EnemyType.SKELETON)),
+        WaveDefinition("WAVE 2", 40f, 95f, 1.00f, 2, 16, listOf(EnemyType.CHASER, EnemyType.DASHER, EnemyType.SKELETON)),
+        WaveDefinition("WAVE 3", 95f, 155f, 0.88f, 2, 20, listOf(EnemyType.CHASER, EnemyType.DASHER, EnemyType.TANK, EnemyType.SHAMAN)),
+        WaveDefinition("WAVE 4", 155f, 220f, 0.76f, 3, 24, listOf(EnemyType.DASHER, EnemyType.TANK, EnemyType.RANGER, EnemyType.SHAMAN)),
+        WaveDefinition("WAVE 5", 220f, 280f, 0.66f, 3, 28, listOf(EnemyType.CHASER, EnemyType.DASHER, EnemyType.TANK, EnemyType.RANGER, EnemyType.SKELETON, EnemyType.SHAMAN, EnemyType.OGRE)),
     )
     private var initialized = false
     private var dragActive = false
@@ -111,17 +132,24 @@ class MainScene(game: MainGame) : Scene(game) {
     private var shotTimer = 0f
     private var bladeTickTimer = 0f
     private var auraTickTimer = 0f
+    private var axeTimer = 0f
+    private var knifeTimer = 0f
+    private var spearTimer = 0f
     private var bladeSpinAngle = 0f
     private var defeatedEnemies = 0
     private var bossSpawned = false
     private var bossDefeated = false
     private var bossIntroTimer = 0f
     private var highestWaveReached = 1
+    private var bossesSpawned = 0
+    private var bossesDefeatedCount = 0
     private var projectileShotsFired = 0
     private var pickupsCollected = 0
     private var selectedUpgrades = 0
-    private val stageDuration = 300f
-    private val bossSpawnTime = 270f
+    private val firstBossSpawnTime = 130f
+    private val bossInterval = 92f
+    private val endlessWaveDuration = 55f
+    private var nextBossSpawnTime = firstBossSpawnTime
 
     override fun onResize(width: Float, height: Float) {
         super.onResize(width, height)
@@ -143,8 +171,11 @@ class MainScene(game: MainGame) : Scene(game) {
         elapsedTime += deltaTime
         spawnTimer -= deltaTime
         shotTimer -= deltaTime
+        axeTimer -= deltaTime
+        knifeTimer -= deltaTime
+        spearTimer -= deltaTime
         bossIntroTimer = (bossIntroTimer - deltaTime).coerceAtLeast(0f)
-        highestWaveReached = maxOf(highestWaveReached, currentWaveIndex() + 1)
+        highestWaveReached = maxOf(highestWaveReached, currentWaveNumber())
 
         updatePlayer(deltaTime)
         updateEnemies(deltaTime)
@@ -153,14 +184,17 @@ class MainScene(game: MainGame) : Scene(game) {
         updateEnemyProjectiles(deltaTime)
         updateBlades(deltaTime)
         updateAura(deltaTime)
+        updateAxes()
+        updateKnives()
+        updateSpears()
         updateGems(deltaTime)
         updateEffects(deltaTime)
         recycleInactiveObjects()
 
-        if (!bossSpawned && elapsedTime >= bossSpawnTime) {
+        if (boss?.isActive != true && elapsedTime >= nextBossSpawnTime) {
             spawnBoss()
         }
-        if (!bossSpawned && spawnTimer <= 0f) {
+        if (boss?.isActive != true && spawnTimer <= 0f) {
             spawnEnemy()
         }
         if (shotTimer <= 0f) {
@@ -169,10 +203,6 @@ class MainScene(game: MainGame) : Scene(game) {
 
         // 8주차 밸런싱: 보스를 30초 안에 마무리하지 못하면 패배 처리해 러닝타임을 안정화합니다.
         if (player.hp <= 0f) {
-            game.replaceScene(ResultScene(game, buildRunSummary(false)))
-        } else if (bossDefeated || (elapsedTime >= stageDuration && !bossSpawned)) {
-            game.replaceScene(ResultScene(game, buildRunSummary(true)))
-        } else if (bossSpawned && !bossDefeated && elapsedTime >= stageDuration) {
             game.replaceScene(ResultScene(game, buildRunSummary(false)))
         }
     }
@@ -219,12 +249,12 @@ class MainScene(game: MainGame) : Scene(game) {
         }
 
         if (isColliding(player.x, player.y, player.radius, activeBoss.x, activeBoss.y, activeBoss.radius)) {
-                if (player.takeDamage(18f)) {
-                    spawnEffect(player.x, player.y, Color.parseColor("#FF6B6B"), 22f, 68f, 0.22f, 6f)
-                    GameAudio.play(GameSfx.PLAYER_HIT)
-                    val dx = player.x - activeBoss.x
-                    val dy = player.y - activeBoss.y
-                    val distance = hypot(dx, dy).coerceAtLeast(1f)
+            if (player.takeDamage(18f)) {
+                spawnEffect(player.x, player.y, Color.parseColor("#FF6B6B"), 22f, 68f, 0.22f, 6f)
+                GameAudio.play(GameSfx.PLAYER_HIT)
+                val dx = player.x - activeBoss.x
+                val dy = player.y - activeBoss.y
+                val distance = hypot(dx, dy).coerceAtLeast(1f)
                 player.nudge((dx / distance) * 48f, (dy / distance) * 48f)
                 player.clampToBounds(worldWidth, worldHeight)
                 updateCamera()
@@ -238,7 +268,8 @@ class MainScene(game: MainGame) : Scene(game) {
             val activeBoss = boss
             if (projectile.isActive && activeBoss?.isActive == true) {
                 if (isColliding(projectile.x, projectile.y, projectile.radius, activeBoss.x, activeBoss.y, activeBoss.radius)) {
-                    projectile.isActive = false
+                    projectile.registerHit()
+                    projectile.skipAhead(activeBoss.radius + projectile.radius + 8f)
                     if (activeBoss.hit(projectile.damage)) {
                         handleBossDefeat()
                     }
@@ -247,7 +278,8 @@ class MainScene(game: MainGame) : Scene(game) {
             for (enemy in enemies) {
                 if (!projectile.isActive || !enemy.isActive) continue
                 if (isColliding(projectile.x, projectile.y, projectile.radius, enemy.x, enemy.y, enemy.radius)) {
-                    projectile.isActive = false
+                    projectile.registerHit()
+                    projectile.skipAhead(enemy.radius + projectile.radius + 6f)
                     if (enemy.hit(projectile.damage)) {
                         handleEnemyDefeat(enemy)
                     }
@@ -347,6 +379,100 @@ class MainScene(game: MainGame) : Scene(game) {
         }
     }
 
+    private fun updateAxes() {
+        if (player.axeLevel <= 0 || axeTimer > 0f) return
+
+        val target = currentTargetInfo() ?: run {
+            axeTimer = 0.25f
+            return
+        }
+        val baseAngle = atan2(target.y - player.y, target.x - player.x)
+        val count = player.axeCount.coerceAtLeast(1)
+        val spreadStep = 0.22f
+        val startOffset = -spreadStep * (count - 1) * 0.5f
+
+        // Axes travel slower but use pierce and size to carve through dense packs.
+        repeat(count) { index ->
+            val angle = baseAngle + startOffset + spreadStep * index
+            obtainProjectile(
+                x = player.x,
+                y = player.y,
+                velocityX = cos(angle) * player.axeSpeed,
+                velocityY = sin(angle) * player.axeSpeed,
+                damage = player.axeDamage,
+                spriteRadius = player.axeRadius,
+                lifeTime = player.axeLifetime,
+                bitmap = SpriteAssets.weaponThrowingAxe,
+                rotationDegrees = Random.nextFloat() * 360f,
+                rotationSpeed = if (index % 2 == 0) 520f else -520f,
+                remainingHits = player.axePierce,
+            )
+        }
+        projectileShotsFired += count
+        axeTimer = player.axeInterval
+    }
+
+    private fun updateKnives() {
+        if (player.knifeLevel <= 0 || knifeTimer > 0f) return
+
+        val target = currentTargetInfo() ?: run {
+            knifeTimer = 0.20f
+            return
+        }
+        val baseAngle = atan2(target.y - player.y, target.x - player.x)
+        val count = player.knifeCount.coerceAtLeast(1)
+        val spreadStep = 0.11f
+        val startOffset = -spreadStep * (count - 1) * 0.5f
+
+        repeat(count) { index ->
+            val angle = baseAngle + startOffset + spreadStep * index
+            obtainProjectile(
+                x = player.x,
+                y = player.y,
+                velocityX = cos(angle) * player.knifeSpeed,
+                velocityY = sin(angle) * player.knifeSpeed,
+                damage = player.knifeDamage,
+                spriteRadius = player.knifeRadius,
+                lifeTime = player.knifeLifetime,
+                bitmap = SpriteAssets.weaponKnife,
+                rotationDegrees = Math.toDegrees(angle.toDouble()).toFloat() + 45f,
+            )
+        }
+        projectileShotsFired += count
+        knifeTimer = player.knifeInterval
+    }
+
+    private fun updateSpears() {
+        if (player.spearLevel <= 0 || spearTimer > 0f) return
+
+        val target = currentTargetInfo() ?: run {
+            spearTimer = 0.24f
+            return
+        }
+        val baseAngle = atan2(target.y - player.y, target.x - player.x)
+        val count = player.spearCount.coerceAtLeast(1)
+        val spreadStep = 0.09f
+        val startOffset = -spreadStep * (count - 1) * 0.5f
+
+        repeat(count) { index ->
+            val angle = baseAngle + startOffset + spreadStep * index
+            obtainProjectile(
+                x = player.x,
+                y = player.y,
+                velocityX = cos(angle) * player.spearSpeed,
+                velocityY = sin(angle) * player.spearSpeed,
+                damage = player.spearDamage,
+                spriteRadius = player.spearRadius,
+                lifeTime = player.spearLifetime,
+                bitmap = SpriteAssets.weaponSpear,
+                rotationDegrees = Math.toDegrees(angle.toDouble()).toFloat() + 90f,
+                remainingHits = player.spearPierce,
+            )
+        }
+        projectileShotsFired += count
+        spearTimer = player.spearInterval
+    }
+
     private fun updateGems(deltaTime: Float) {
         var leveledUp = false
         gems.forEach { gem ->
@@ -420,43 +546,24 @@ class MainScene(game: MainGame) : Scene(game) {
                 }
             }
 
-            val difficulty = 1f + elapsedTime / 50f
+            val difficulty = 1f + elapsedTime / 55f
             val enemyType = currentWave.enemyTypes.random()
+            val profile = enemySpawnProfile(enemyType, difficulty)
             obtainEnemy(
                 x = spawnX,
                 y = spawnY,
                 type = enemyType,
-                moveSpeed = when (enemyType) {
-                    EnemyType.CHASER -> 90f + difficulty * 22f
-                    EnemyType.DASHER -> 118f + difficulty * 18f
-                    EnemyType.TANK -> 62f + difficulty * 12f
-                    EnemyType.RANGER -> 88f + difficulty * 14f
-                },
-                hp = when (enemyType) {
-                    EnemyType.CHASER -> 18f + difficulty * 8f
-                    EnemyType.DASHER -> 14f + difficulty * 6f
-                    EnemyType.TANK -> 42f + difficulty * 16f
-                    EnemyType.RANGER -> 22f + difficulty * 9f
-                },
-                damage = when (enemyType) {
-                    EnemyType.CHASER -> 10f
-                    EnemyType.DASHER -> 14f
-                    EnemyType.TANK -> 18f
-                    EnemyType.RANGER -> 11f
-                },
-                expReward = when (enemyType) {
-                    EnemyType.CHASER -> 1
-                    EnemyType.DASHER -> 2
-                    EnemyType.TANK -> 3
-                    EnemyType.RANGER -> 2
-                },
+                moveSpeed = profile.moveSpeed,
+                hp = profile.hp,
+                damage = profile.damage,
+                expReward = profile.expReward,
             )
         }
         spawnTimer = currentWave.spawnInterval
     }
 
     private fun fireProjectile() {
-        val target = enemies.minByOrNull { distanceSquared(player.x, player.y, it.x, it.y) } ?: run {
+        val target = currentTargetInfo() ?: run {
             shotTimer = 0.25f
             return
         }
@@ -558,6 +665,18 @@ class MainScene(game: MainGame) : Scene(game) {
                 upgradeRanks.bump(option.id)
                 player.upgradeAura()
             }
+            "axe" -> {
+                upgradeRanks.bump(option.id)
+                player.upgradeAxe()
+            }
+            "knife" -> {
+                upgradeRanks.bump(option.id)
+                player.upgradeKnife()
+            }
+            "spear" -> {
+                upgradeRanks.bump(option.id)
+                player.upgradeSpear()
+            }
             "heal" -> player.heal(30f)
             "bonus_exp" -> {
                 repeat(6) {
@@ -635,11 +754,12 @@ class MainScene(game: MainGame) : Scene(game) {
 
     private fun drawHud(canvas: Canvas) {
         val currentWave = currentWaveDefinition()
-        val waveLabel = if (bossSpawned && !bossDefeated) "BOSS NIGHT" else currentWave.label
-        val objectiveLabel = if (bossSpawned && !bossDefeated) {
-            "Boss LIVE"
+        val activeBoss = boss?.takeIf { it.isActive }
+        val waveLabel = if (activeBoss != null) "BOSS ${activeBoss.bossIndex}" else currentWave.label
+        val objectiveLabel = if (activeBoss != null) {
+            "Boss ${activeBoss.bossIndex} LIVE"
         } else {
-            "Boss ETA ${maxOf(0f, bossSpawnTime - elapsedTime).toInt()}s"
+            "Next Boss ${maxOf(0f, nextBossSpawnTime - elapsedTime).toInt()}s"
         }
         paint.textAlign = Paint.Align.LEFT
         paint.style = Paint.Style.FILL
@@ -672,24 +792,24 @@ class MainScene(game: MainGame) : Scene(game) {
         paint.color = Color.parseColor("#C9D1D9")
         paint.textSize = 24f
         canvas.drawText("World ${player.x.toInt()}, ${player.y.toInt()}", width - 24f, 44f, paint)
-        canvas.drawText("Enemies ${enemies.size + if (boss?.isActive == true) 1 else 0}", width - 24f, 76f, paint)
+        canvas.drawText("Enemies ${enemies.size + if (activeBoss != null) 1 else 0}", width - 24f, 76f, paint)
         canvas.drawText("Shots ${player.projectileCount}  Rate ${"%.2f".format(player.attackInterval)}", width - 24f, 108f, paint)
-        canvas.drawText("Blade ${player.bladeLevel}  Aura ${player.auraLevel}", width - 24f, 140f, paint)
-        canvas.drawText("Magnet ${player.pickupRadius.toInt()}", width - 24f, 172f, paint)
+        canvas.drawText("B${player.bladeLevel} A${player.auraLevel} X${player.axeLevel}", width - 24f, 140f, paint)
+        canvas.drawText("K${player.knifeLevel} S${player.spearLevel} Mag ${player.pickupRadius.toInt()}", width - 24f, 172f, paint)
         canvas.drawText(objectiveLabel, width - 24f, 204f, paint)
 
-        boss?.takeIf { it.isActive }?.let { activeBoss ->
+        activeBoss?.let {
             val bossBarTop = height - 76f
             paint.textAlign = Paint.Align.CENTER
             paint.color = Color.parseColor("#FF7A90")
             paint.textSize = 30f
-            canvas.drawText("Crimson Overlord", width * 0.5f, bossBarTop - 14f, paint)
+            canvas.drawText("Crimson Overlord ${it.bossIndex}", width * 0.5f, bossBarTop - 14f, paint)
 
             paint.style = Paint.Style.FILL
             paint.color = Color.parseColor("#2A1020")
             canvas.drawRoundRect(24f, bossBarTop, width - 24f, bossBarTop + 22f, 11f, 11f, paint)
             paint.color = Color.parseColor("#FF7A90")
-            canvas.drawRoundRect(24f, bossBarTop, 24f + (width - 48f) * activeBoss.hpRatio(), bossBarTop + 22f, 11f, 11f, paint)
+            canvas.drawRoundRect(24f, bossBarTop, 24f + (width - 48f) * it.hpRatio(), bossBarTop + 22f, 11f, 11f, paint)
         }
     }
 
@@ -831,6 +951,38 @@ class MainScene(game: MainGame) : Scene(game) {
         return dx * dx + dy * dy
     }
 
+    private fun currentTargetInfo(): TargetInfo? {
+        var target: TargetInfo? = null
+        var bestDistance = Float.MAX_VALUE
+
+        boss?.takeIf { it.isActive }?.let { activeBoss ->
+            bestDistance = distanceSquared(player.x, player.y, activeBoss.x, activeBoss.y)
+            target = TargetInfo(activeBoss.x, activeBoss.y)
+        }
+
+        enemies.forEach { enemy ->
+            if (!enemy.isActive) return@forEach
+            val distance = distanceSquared(player.x, player.y, enemy.x, enemy.y)
+            if (distance < bestDistance) {
+                bestDistance = distance
+                target = TargetInfo(enemy.x, enemy.y)
+            }
+        }
+        return target
+    }
+
+    private fun enemySpawnProfile(type: EnemyType, difficulty: Float): EnemySpawnProfile {
+        return when (type) {
+            EnemyType.CHASER -> EnemySpawnProfile(92f + difficulty * 22f, 18f + difficulty * 8f, 10f, 1)
+            EnemyType.DASHER -> EnemySpawnProfile(118f + difficulty * 18f, 14f + difficulty * 6f, 14f, 2)
+            EnemyType.TANK -> EnemySpawnProfile(64f + difficulty * 12f, 42f + difficulty * 16f, 18f, 3)
+            EnemyType.RANGER -> EnemySpawnProfile(88f + difficulty * 14f, 22f + difficulty * 9f, 11f, 2)
+            EnemyType.SKELETON -> EnemySpawnProfile(102f + difficulty * 20f, 16f + difficulty * 7f, 12f, 2)
+            EnemyType.SHAMAN -> EnemySpawnProfile(78f + difficulty * 12f, 26f + difficulty * 11f, 13f, 3)
+            EnemyType.OGRE -> EnemySpawnProfile(54f + difficulty * 10f, 68f + difficulty * 22f, 20f, 4)
+        }
+    }
+
     private fun handleEnemyDefeat(enemy: Enemy) {
         defeatedEnemies += 1
         spawnEffect(enemy.x, enemy.y, Color.parseColor("#F6C85F"), 10f, 32f, 0.20f, 4f)
@@ -841,21 +993,19 @@ class MainScene(game: MainGame) : Scene(game) {
     }
 
     private fun handleBossDefeat() {
-        if (bossDefeated) return
-        boss?.let { spawnEffect(it.x, it.y, Color.parseColor("#FF7A90"), 42f, 180f, 0.65f, 8f) }
+        val activeBoss = boss ?: return
+        activeBoss.let { spawnEffect(it.x, it.y, Color.parseColor("#FF7A90"), 42f, 180f, 0.65f, 8f) }
         GameAudio.play(GameSfx.BOSS_CLEAR)
-        boss?.isActive = false
+        activeBoss.isActive = false
         boss = null
         bossDefeated = true
+        bossesDefeatedCount += 1
         defeatedEnemies += 12
+        nextBossSpawnTime = elapsedTime + bossInterval
     }
 
     private fun buildRunSummary(victory: Boolean): RunSummary {
-        val deepestPhase = if (bossSpawned) {
-            if (bossDefeated) "BOSS CLEARED" else "BOSS FAILED"
-        } else {
-            "WAVE $highestWaveReached"
-        }
+        val deepestPhase = "WAVE $highestWaveReached  |  BOSSES $bossesDefeatedCount"
         return RunSummary(
             survivedTime = elapsedTime,
             defeatedEnemies = defeatedEnemies,
@@ -863,23 +1013,48 @@ class MainScene(game: MainGame) : Scene(game) {
             victory = victory,
             bossEncountered = bossSpawned,
             bossDefeated = bossDefeated,
+            bossesDefeatedCount = bossesDefeatedCount,
             deepestPhase = deepestPhase,
             projectilesFired = projectileShotsFired,
             pickupsCollected = pickupsCollected,
             selectedUpgrades = selectedUpgrades,
-            weaponLoadout = "Gun ${player.projectileCount} / Blade ${player.bladeLevel} / Aura ${player.auraLevel}",
+            weaponLoadout = "G${player.projectileCount} B${player.bladeLevel} A${player.auraLevel} X${player.axeLevel} K${player.knifeLevel} S${player.spearLevel}",
         )
     }
 
     private fun currentWaveDefinition(): WaveDefinition {
-        return waveDefinitions.firstOrNull { elapsedTime >= it.startTime && elapsedTime < it.endTime }
-            ?: waveDefinitions.last()
+        waveDefinitions.firstOrNull { elapsedTime >= it.startTime && elapsedTime < it.endTime }?.let { scripted ->
+            return scripted
+        }
+
+        val lastWave = waveDefinitions.last()
+        val endlessIndex = ((elapsedTime - lastWave.endTime) / endlessWaveDuration).toInt().coerceAtLeast(0)
+        val spawnInterval = (lastWave.spawnInterval - endlessIndex * 0.04f).coerceAtLeast(0.34f)
+        val batchSize = (lastWave.batchSize + endlessIndex / 2).coerceAtMost(6)
+        val maxEnemies = (lastWave.maxEnemies + endlessIndex * 3).coerceAtMost(54)
+        val endlessTypes = lastWave.enemyTypes.toMutableList().apply {
+            if (endlessIndex >= 1) add(EnemyType.OGRE)
+            if (endlessIndex >= 2) add(EnemyType.SHAMAN)
+            if (endlessIndex >= 3) add(EnemyType.DASHER)
+        }
+        return WaveDefinition(
+            label = "ENDLESS ${endlessIndex + 1}",
+            startTime = lastWave.endTime + endlessIndex * endlessWaveDuration,
+            endTime = Float.MAX_VALUE,
+            spawnInterval = spawnInterval,
+            batchSize = batchSize,
+            maxEnemies = maxEnemies,
+            enemyTypes = endlessTypes,
+        )
     }
 
-    private fun currentWaveIndex(): Int {
-        return waveDefinitions.indexOfFirst { elapsedTime >= it.startTime && elapsedTime < it.endTime }
-            .takeIf { it >= 0 }
-            ?: (waveDefinitions.lastIndex)
+    private fun currentWaveNumber(): Int {
+        val scriptedIndex = waveDefinitions.indexOfFirst { elapsedTime >= it.startTime && elapsedTime < it.endTime }
+        if (scriptedIndex >= 0) {
+            return scriptedIndex + 1
+        }
+        val endlessOffset = ((elapsedTime - waveDefinitions.last().endTime) / endlessWaveDuration).toInt().coerceAtLeast(0)
+        return waveDefinitions.size + endlessOffset + 1
     }
 
     private fun obtainEnemy(
@@ -905,10 +1080,38 @@ class MainScene(game: MainGame) : Scene(game) {
         damage: Float,
         spriteRadius: Float,
         lifeTime: Float,
+        bitmap: android.graphics.Bitmap? = null,
+        rotationDegrees: Float = 0f,
+        rotationSpeed: Float = 0f,
+        remainingHits: Int = 1,
     ) {
         val projectile = projectilePool.removeLastOrNull()
-            ?: Projectile(x, y, velocityX, velocityY, damage, spriteRadius, lifeTime)
-        projectile.reset(x, y, velocityX, velocityY, damage, spriteRadius, lifeTime)
+            ?: Projectile(
+                x = x,
+                y = y,
+                velocityX = velocityX,
+                velocityY = velocityY,
+                damage = damage,
+                spriteRadius = spriteRadius,
+                lifeTime = lifeTime,
+                bitmap = bitmap,
+                rotationDegrees = rotationDegrees,
+                rotationSpeed = rotationSpeed,
+                remainingHits = remainingHits,
+            )
+        projectile.reset(
+            x = x,
+            y = y,
+            velocityX = velocityX,
+            velocityY = velocityY,
+            damage = damage,
+            spriteRadius = spriteRadius,
+            lifeTime = lifeTime,
+            bitmap = bitmap,
+            rotationDegrees = rotationDegrees,
+            rotationSpeed = rotationSpeed,
+            remainingHits = remainingHits,
+        )
         projectiles += projectile
     }
 
@@ -972,10 +1175,12 @@ class MainScene(game: MainGame) : Scene(game) {
         val spawnX = (player.x + width * 0.28f).coerceIn(120f, worldWidth - 120f)
         val spawnY = (player.y - height * 0.34f).coerceIn(120f, worldHeight - 120f)
         val nextBoss = boss ?: BossEnemy(spawnX, spawnY)
-        nextBoss.reset(spawnX, spawnY)
+        bossesSpawned += 1
+        nextBoss.reset(spawnX, spawnY, bossesSpawned)
         boss = nextBoss
         bossSpawned = true
         bossIntroTimer = 2.4f
+        nextBossSpawnTime = Float.MAX_VALUE
         spawnEffect(spawnX, spawnY, Color.parseColor("#FF7A90"), 34f, 140f, 0.55f, 7f)
         GameAudio.play(GameSfx.BOSS_ALERT)
     }
@@ -986,15 +1191,17 @@ class MainScene(game: MainGame) : Scene(game) {
             val angle = (Math.PI * 2.0 * index / count).toFloat() + elapsedTime * 0.3f
             val spawnX = (activeBoss.x + cos(angle) * 120f).coerceIn(40f, worldWidth - 40f)
             val spawnY = (activeBoss.y + sin(angle) * 120f).coerceIn(40f, worldHeight - 40f)
-            val enemyType = if (index % 2 == 0) EnemyType.DASHER else EnemyType.RANGER
+            val escortTypes = listOf(EnemyType.DASHER, EnemyType.RANGER, EnemyType.SKELETON, EnemyType.SHAMAN, EnemyType.OGRE)
+            val enemyType = escortTypes[(index + bossesSpawned) % escortTypes.size]
+            val profile = enemySpawnProfile(enemyType, 1.5f + elapsedTime / 80f)
             obtainEnemy(
                 x = spawnX,
                 y = spawnY,
                 type = enemyType,
-                moveSpeed = if (enemyType == EnemyType.DASHER) 150f else 96f,
-                hp = if (enemyType == EnemyType.DASHER) 24f else 26f,
-                damage = if (enemyType == EnemyType.DASHER) 15f else 12f,
-                expReward = 2,
+                moveSpeed = profile.moveSpeed,
+                hp = profile.hp,
+                damage = profile.damage,
+                expReward = profile.expReward,
             )
         }
     }
@@ -1009,6 +1216,15 @@ class MainScene(game: MainGame) : Scene(game) {
         if (player.level >= 3 && upgradeRanks.getOrDefault("aura", 0) == 0) {
             prioritized += upgradeDefinitions.first { it.id == "aura" }
         }
+        if (player.level >= 2 && upgradeRanks.getOrDefault("axe", 0) == 0) {
+            prioritized += upgradeDefinitions.first { it.id == "axe" }
+        }
+        if (player.level >= 4 && upgradeRanks.getOrDefault("knife", 0) == 0) {
+            prioritized += upgradeDefinitions.first { it.id == "knife" }
+        }
+        if (player.level >= 6 && upgradeRanks.getOrDefault("spear", 0) == 0) {
+            prioritized += upgradeDefinitions.first { it.id == "spear" }
+        }
 
         return prioritized + upgradeDefinitions.shuffled().filterNot { candidate ->
             prioritized.any { it.id == candidate.id }
@@ -1021,6 +1237,9 @@ class MainScene(game: MainGame) : Scene(game) {
             EnemyType.RANGER -> 0.10f
             EnemyType.DASHER -> 0.06f
             EnemyType.CHASER -> 0.03f
+            EnemyType.SKELETON -> 0.05f
+            EnemyType.SHAMAN -> 0.12f
+            EnemyType.OGRE -> 0.16f
         }
         return player.hp < player.maxHp * 0.75f && Random.nextFloat() < dropChance
     }

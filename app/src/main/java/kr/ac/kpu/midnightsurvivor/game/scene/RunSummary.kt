@@ -7,6 +7,7 @@ data class RunSummary(
     val victory: Boolean,
     val bossEncountered: Boolean,
     val bossDefeated: Boolean,
+    val bossesDefeatedCount: Int,
     val deepestPhase: String,
     val projectilesFired: Int,
     val pickupsCollected: Int,

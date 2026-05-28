@@ -41,6 +41,9 @@ class Enemy(
             EnemyType.DASHER -> 18f
             EnemyType.TANK -> 28f
             EnemyType.RANGER -> 22f
+            EnemyType.SKELETON -> 19f
+            EnemyType.SHAMAN -> 24f
+            EnemyType.OGRE -> 34f
         }
 
     override fun update(deltaTime: Float) = Unit
@@ -54,7 +57,7 @@ class Enemy(
         damage: Float,
         expReward: Int,
     ) {
-        // 재사용 시 타입별 상태를 함께 초기화해 풀링된 적이 이전 행동을 끌고 오지 않게 합니다.
+        // Reset every behavior timer when reusing pooled enemies so each spawn starts cleanly.
         this.x = x
         this.y = y
         this.type = type
@@ -81,12 +84,16 @@ class Enemy(
         if (distance <= 0f) return null
 
         var shot: EnemyShot? = null
+        val dirX = dx / distance
+        val dirY = dy / distance
+        val tangentX = -dirY * strafeDirection
+        val tangentY = dirX * strafeDirection
 
         when (type) {
             EnemyType.CHASER -> {
                 facingLeft = dx < 0f
-                x += (dx / distance) * moveSpeed * deltaTime
-                y += (dy / distance) * moveSpeed * deltaTime
+                x += dirX * moveSpeed * deltaTime
+                y += dirY * moveSpeed * deltaTime
                 animationTime += deltaTime
             }
 
@@ -97,39 +104,34 @@ class Enemy(
                     facingLeft = dashDirX < 0f
                     animationTime += deltaTime * 1.8f
                     dashTime -= deltaTime
-                    // 돌진 중에는 원거리 탄환을 만들지 않으므로 null을 반환합니다.
                     return null
                 }
 
                 facingLeft = dx < 0f
-                x += (dx / distance) * moveSpeed * 0.6f * deltaTime
-                y += (dy / distance) * moveSpeed * 0.6f * deltaTime
+                x += dirX * moveSpeed * 0.6f * deltaTime
+                y += dirY * moveSpeed * 0.6f * deltaTime
                 animationTime += deltaTime * 0.8f
 
                 dashCooldown -= deltaTime
                 if (dashCooldown <= 0f && distance < 420f) {
-                    dashDirX = dx / distance
-                    dashDirY = dy / distance
+                    dashDirX = dirX
+                    dashDirY = dirY
                     dashTime = 0.25f
                     dashCooldown = 1.9f
                 }
             }
 
             EnemyType.TANK -> {
-                // 탱커는 느리지만 꾸준히 압박하도록 단순 추적에 체급만 키웁니다.
+                // Tanks stay simple and relentless so they act as readable wall pressure.
                 facingLeft = dx < 0f
-                x += (dx / distance) * moveSpeed * deltaTime
-                y += (dy / distance) * moveSpeed * deltaTime
+                x += dirX * moveSpeed * deltaTime
+                y += dirY * moveSpeed * deltaTime
                 animationTime += deltaTime * 0.55f
             }
 
             EnemyType.RANGER -> {
-                // 원거리 적은 거리를 유지하며 측면 이동으로 탄막 준비 자세를 만듭니다.
+                // Rangers orbit at mid range and poke the player to force movement.
                 facingLeft = dx < 0f
-                val dirX = dx / distance
-                val dirY = dy / distance
-                val tangentX = -dirY * strafeDirection
-                val tangentY = dirX * strafeDirection
                 val chaseWeight = when {
                     distance > 360f -> 0.85f
                     distance < 220f -> -0.65f
@@ -155,6 +157,71 @@ class Enemy(
                     strafeDirection *= -1f
                 }
             }
+
+            EnemyType.SKELETON -> {
+                // Skeletons weave around the player a bit so the larger horde feels less linear.
+                facingLeft = dx < 0f
+                val chaseWeight = if (distance > 260f) 0.95f else 0.48f
+                x += (dirX * chaseWeight + tangentX * 0.42f) * moveSpeed * deltaTime
+                y += (dirY * chaseWeight + tangentY * 0.42f) * moveSpeed * deltaTime
+                animationTime += deltaTime * 1.2f
+                if (distance < 140f || distance > 330f) {
+                    strafeDirection *= -1f
+                }
+            }
+
+            EnemyType.SHAMAN -> {
+                // Shamans hold a lane and add ranged pressure distinct from the lighter ranger.
+                facingLeft = dx < 0f
+                val chaseWeight = when {
+                    distance > 420f -> 0.88f
+                    distance < 240f -> -0.78f
+                    else -> 0.03f
+                }
+                x += (dirX * chaseWeight + tangentX * 0.28f) * moveSpeed * deltaTime
+                y += (dirY * chaseWeight + tangentY * 0.28f) * moveSpeed * deltaTime
+                animationTime += deltaTime * 0.78f
+
+                rangedShotCooldown -= deltaTime
+                if (distance < 560f && rangedShotCooldown <= 0f) {
+                    shot = EnemyShot(
+                        x = x,
+                        y = y - 10f,
+                        velocityX = dirX * 255f,
+                        velocityY = dirY * 255f,
+                        damage = 12f,
+                        radius = 11f,
+                    )
+                    rangedShotCooldown = if (distance < 300f) 1.0f else 1.35f
+                }
+                if (distance < 210f || distance > 440f) {
+                    strafeDirection *= -1f
+                }
+            }
+
+            EnemyType.OGRE -> {
+                if (dashTime > 0f) {
+                    x += dashDirX * moveSpeed * 2.1f * deltaTime
+                    y += dashDirY * moveSpeed * 2.1f * deltaTime
+                    facingLeft = dashDirX < 0f
+                    animationTime += deltaTime * 0.85f
+                    dashTime -= deltaTime
+                    return null
+                }
+
+                facingLeft = dx < 0f
+                x += dirX * moveSpeed * 0.74f * deltaTime
+                y += dirY * moveSpeed * 0.74f * deltaTime
+                animationTime += deltaTime * 0.5f
+
+                dashCooldown -= deltaTime
+                if (dashCooldown <= 0f && distance < 320f) {
+                    dashDirX = dirX
+                    dashDirY = dirY
+                    dashTime = 0.40f
+                    dashCooldown = 2.7f
+                }
+            }
         }
         return shot
     }
@@ -177,6 +244,10 @@ class Enemy(
             EnemyType.DASHER,
             EnemyType.RANGER,
             -> SpriteAssets.impRun
+
+            EnemyType.SKELETON -> SpriteAssets.skeletonRun
+            EnemyType.SHAMAN -> SpriteAssets.shamanRun
+            EnemyType.OGRE -> SpriteAssets.ogreRun
         }
         val frame = frames[((animationTime * 8f).toInt()) % frames.size]
         val size = when (type) {
@@ -184,6 +255,9 @@ class Enemy(
             EnemyType.DASHER -> 44f
             EnemyType.TANK -> 64f
             EnemyType.RANGER -> 50f
+            EnemyType.SKELETON -> 50f
+            EnemyType.SHAMAN -> 62f
+            EnemyType.OGRE -> 86f
         }
         val dest = RectF(x - size, y - size, x + size, y + size)
 
@@ -206,20 +280,42 @@ class Enemy(
             type == EnemyType.CHASER -> Color.parseColor("#0B1020")
             type == EnemyType.TANK -> Color.parseColor("#5C2E0D")
             type == EnemyType.RANGER -> Color.parseColor("#6C1F7A")
+            type == EnemyType.SKELETON -> Color.parseColor("#D9E2EC")
+            type == EnemyType.SHAMAN -> Color.parseColor("#8BE9FD")
+            type == EnemyType.OGRE -> Color.parseColor("#FFB86C")
             else -> Color.parseColor("#2A0B0B")
         }
         canvas.drawCircle(x + 4f, y - 14f, 3f, paint)
 
-        if (type == EnemyType.TANK) {
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 4f
-            paint.color = Color.parseColor("#F6C85F")
-            canvas.drawCircle(x, y - 2f, radius + 6f, paint)
-        } else if (type == EnemyType.RANGER) {
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 3f
-            paint.color = Color.parseColor("#BD93F9")
-            canvas.drawCircle(x, y - 4f, radius + 8f, paint)
+        when (type) {
+            EnemyType.TANK -> {
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 4f
+                paint.color = Color.parseColor("#F6C85F")
+                canvas.drawCircle(x, y - 2f, radius + 6f, paint)
+            }
+
+            EnemyType.RANGER,
+            EnemyType.SHAMAN,
+            -> {
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 3f
+                paint.color = if (type == EnemyType.SHAMAN) {
+                    Color.parseColor("#8BE9FD")
+                } else {
+                    Color.parseColor("#BD93F9")
+                }
+                canvas.drawCircle(x, y - 4f, radius + 8f, paint)
+            }
+
+            EnemyType.OGRE -> {
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 5f
+                paint.color = Color.parseColor("#7C4D12")
+                canvas.drawCircle(x, y + 4f, radius + 4f, paint)
+            }
+
+            else -> Unit
         }
     }
 
