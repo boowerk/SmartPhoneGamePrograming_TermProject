@@ -33,7 +33,8 @@ class TitleScene(game: MainGame) : Scene(game) {
 
         paint.textSize = 36f
         paint.color = Color.parseColor("#8BE9FD")
-        canvas.drawText("Kotlin + CustomView Prototype", width * 0.5f, height * 0.48f, paint)
+        // 첫 화면에서 조작과 목표가 바로 읽히도록 장르 문구를 조금 더 구체화합니다.
+        canvas.drawText("3 Auto Weapons + Boss Finale", width * 0.5f, height * 0.48f, paint)
 
         paint.color = Color.parseColor("#1F4068")
         paint.style = Paint.Style.FILL
@@ -45,7 +46,7 @@ class TitleScene(game: MainGame) : Scene(game) {
 
         paint.color = Color.parseColor("#C9D1D9")
         paint.textSize = 28f
-        canvas.drawText("Drag to move, auto attack to survive", width * 0.5f, height * 0.82f, paint)
+        canvas.drawText("Drag to move, survive the night, finish the boss", width * 0.5f, height * 0.82f, paint)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
