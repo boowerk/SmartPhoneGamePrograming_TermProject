@@ -97,7 +97,8 @@ class Enemy(
                     facingLeft = dashDirX < 0f
                     animationTime += deltaTime * 1.8f
                     dashTime -= deltaTime
-                    return
+                    // 돌진 중에는 원거리 탄환을 만들지 않으므로 null을 반환합니다.
+                    return null
                 }
 
                 facingLeft = dx < 0f
