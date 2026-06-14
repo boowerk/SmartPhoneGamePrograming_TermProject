@@ -574,13 +574,15 @@ class MainScene(game: MainGame) : Scene(game) {
         projectileShotsFired += count
         repeat(count) { index ->
             val projectileAngle = angle + startOffset + spreadStep * index
+            // Moon Shot arrows get a slightly larger draw radius so they stay readable in motion.
+            val moonShotRadius = player.projectileRadius * 1.35f
             obtainProjectile(
                 x = player.x,
                 y = player.y,
                 velocityX = cos(projectileAngle) * player.projectileSpeed,
                 velocityY = sin(projectileAngle) * player.projectileSpeed,
                 damage = player.projectileDamage(),
-                spriteRadius = player.projectileRadius,
+                spriteRadius = moonShotRadius,
                 lifeTime = player.projectileLifetime,
                 bitmap = SpriteAssets.weaponArrow,
                 rotationDegrees = Math.toDegrees(projectileAngle.toDouble()).toFloat() + 90f,
