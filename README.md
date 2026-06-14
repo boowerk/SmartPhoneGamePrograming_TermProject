@@ -14,9 +14,7 @@
 | 2차 README | [2차 발표 당시 README](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject/blob/832453f/README.md) |
 | 2차 발표 영상 | [2차 발표 영상](https://youtu.be/HZ5cnlDDAu0) |
 | 3차 README | [최종 README](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject/blob/main/README.md) |
-| 3차 발표 영상 | 업로드 후 최종 링크로 교체 필요 |
-
-> 최종 발표 영상 링크는 아직 저장소에서 확인되지 않아 placeholder 상태로 남겨 두었습니다.
+| 3차 발표 영상 | [최종 발표 영상](https://youtu.be/XRQ1ERmW2R0) |
 
 ## 게임에 대한 간단한 소개
 
