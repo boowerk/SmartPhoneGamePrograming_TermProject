@@ -40,6 +40,7 @@
 | 일반 적 | Chaser, Dasher, Tank, Ranger, Skeleton, Shaman, Ogre |
 | 보스 | 반복 등장하는 Crimson Overlord |
 | 성장 | 레벨업 카드 3개 중 선택 |
+| 오디오 | `blood_arcade` 배경음악, 공격/버튼/경험치 획득 효과음 적용 |
 | 목표 | 무한 모드에서 최대한 오래 생존 |
 | 결과 화면 | 생존 시간, 처치 수, 레벨, 보스 격파 수, 무기 빌드 요약 |
 
@@ -70,7 +71,7 @@
 | 성장 구현 | 레벨업 카드 3종 이상 | 카드형 강화 시스템과 6종 무기 빌드 구현 | 완료 |
 | 적/보스 확장 | 적 패턴 추가, 보스 1종 구현 | 일반 적 7종, 반복 보스 1종 구현 | 완료 |
 | 게임 목표 | 5분 생존 후 클리어 | 무한 모드로 변경 | 방향 변경 후 완료 |
-| 발표/제출 정리 | README와 영상 정리 | 1차/2차/최종 README 체계 정리 | 진행 중 |
+| 발표/제출 정리 | README와 영상 정리 | 1차/2차/최종 README 체계 정리, APK 제출본 재정리 | 진행 중 |
 
 ### 목표 변경 내용과 이유
 
@@ -94,7 +95,7 @@
 | 7주차 | 2026-05-18 ~ 2026-05-24 | 보스 패턴, 전투 피드백, 결과 요약, 신규 무기 기초 구현 |
 | 8주차 | 2026-05-25 ~ 2026-05-31 | 회복 드롭, 결과 화면 다듬기, 무한 모드 전환, 보스 반복 루프 |
 | 9주차 | 2026-06-01 ~ 2026-06-07 | 추가 정리 및 발표 준비 |
-| 10주차 | 2026-06-08 ~ 2026-06-14 | 무기 스프라이트 보강, 최종 제출 문서 정리 |
+| 10주차 | 2026-06-08 ~ 2026-06-14 | 무기 스프라이트 보강, 사운드 통합, 최종 제출 문서 정리 |
 
 ## 주차별 커밋 횟수
 
@@ -103,7 +104,7 @@ GitHub 기준 확인 링크:
 - [GitHub Commits](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject/commits/main/)
 - [GitHub Insights - Commit Activity](https://github.com/boowerk/SmartPhoneGamePrograming_TermProject/graphs/commit-activity)
 
-![GitHub Insights Commit Activity](./docs/github-insights-commits.svg)
+![GitHub Insights Commit Activity](./docs/github-insights-commits.png)
 
 아래 표는 위 GitHub 커밋 이력과 인사이트를 기준으로 주차별 커밋 수를 정리한 것입니다.
 
@@ -170,8 +171,8 @@ GitHub 기준 확인 링크:
 - 무기 6종 빌드 확장
 - 레벨업 카드 정의와 업그레이드 적용 시스템
 - 결과 화면 요약 통계
-- 톤 기반 효과음 시스템
-- 샘플 효과음과 배경음악을 게임 이벤트에 연결한 오디오 피드백
+- `ToneGenerator`, `SoundPool`, `MediaPlayer`를 함께 사용하는 하이브리드 오디오 시스템
+- `fall`, `arrow_sound`, `button_sound`, `blood_arcade`를 게임 이벤트에 연결한 오디오 피드백
 - 발표와 제출용 README 정리
 
 ## 아쉬운 것들
@@ -189,7 +190,7 @@ GitHub 기준 확인 링크:
 - 저장/불러오기와 영구 성장
 - 광고/과금이 아닌 보상 구조 설계
 - 다양한 해상도와 기기별 UX 검증
-- 실제 사운드 리소스와 설정 메뉴
+- 사운드 On/Off, 세부 볼륨 설정 메뉴
 
 ### 결국 해결하지 못한 문제 / 버그
 
@@ -225,6 +226,7 @@ GitHub 기준 확인 링크:
 ## APK 파일
 
 - 제출용 APK 경로: `app/build/outputs/apk/debug/app-debug.apk`
+- 2026-06-14 기준 재빌드 산출물: `signed debug APK` (`9,164,799 bytes`)
 - 현재 저장소에는 `release keystore`가 없으므로, 설치 가능한 `signed debug APK`를 제출 기준으로 사용합니다.
 - 파일 크기 때문에 e-class 첨부가 불가능하면, Google Drive 등에 올린 뒤 본문 링크로 교체하면 됩니다.
 
