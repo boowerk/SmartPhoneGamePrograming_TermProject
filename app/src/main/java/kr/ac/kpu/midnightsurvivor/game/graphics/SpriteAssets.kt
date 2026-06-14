@@ -30,6 +30,10 @@ object SpriteAssets {
         private set
     lateinit var weaponSpear: Bitmap
         private set
+    lateinit var weaponArrow: Bitmap
+        private set
+    lateinit var weaponSawSword: Bitmap
+        private set
     lateinit var buttonBlue: Bitmap
         private set
     lateinit var buttonRed: Bitmap
@@ -103,6 +107,8 @@ object SpriteAssets {
         weaponThrowingAxe = load(R.drawable.weapon_throwing_axe)
         weaponKnife = load(R.drawable.weapon_knife)
         weaponSpear = load(R.drawable.weapon_spear)
+        weaponArrow = load(R.drawable.weapon_arrow)
+        weaponSawSword = load(R.drawable.weapon_saw_sword)
         buttonBlue = load(R.drawable.button_blue_up)
         buttonRed = load(R.drawable.button_red_up)
         doorFrameTop = load(R.drawable.doors_frame_top)

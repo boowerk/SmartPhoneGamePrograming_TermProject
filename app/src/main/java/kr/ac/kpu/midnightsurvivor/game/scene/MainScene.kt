@@ -582,6 +582,8 @@ class MainScene(game: MainGame) : Scene(game) {
                 damage = player.projectileDamage(),
                 spriteRadius = player.projectileRadius,
                 lifeTime = player.projectileLifetime,
+                bitmap = SpriteAssets.weaponArrow,
+                rotationDegrees = Math.toDegrees(projectileAngle.toDouble()).toFloat() + 90f,
             )
         }
         shotTimer = player.attackInterval
@@ -866,16 +868,35 @@ class MainScene(game: MainGame) : Scene(game) {
     private fun drawBlades(canvas: Canvas) {
         if (player.bladeLevel <= 0 || player.bladeCount <= 0) return
 
-        paint.style = Paint.Style.FILL
-        currentBladePositions().forEachIndexed { index, position ->
-            paint.color = if (index % 2 == 0) Color.parseColor("#F6C85F") else Color.parseColor("#FFD87A")
-            canvas.drawCircle(position.first, position.second, player.bladeHitRadius, paint)
+        // Orbit blades now use a sword sprite so the loadout reads clearly in screenshots and play.
+        val bladeBitmap = SpriteAssets.weaponSawSword
+        val scale = (player.bladeHitRadius * 3.2f) / maxOf(bladeBitmap.width, bladeBitmap.height).toFloat()
+        val halfWidth = bladeBitmap.width * scale * 0.5f
+        val halfHeight = bladeBitmap.height * scale * 0.5f
 
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 3f
-            paint.color = Color.parseColor("#8C5A1C")
-            canvas.drawCircle(position.first, position.second, player.bladeHitRadius, paint)
+        currentBladePositions().forEach { position ->
+            val bladeAngle = atan2(position.second - player.y, position.first - player.x)
+            val dest = RectF(
+                position.first - halfWidth,
+                position.second - halfHeight,
+                position.first + halfWidth,
+                position.second + halfHeight,
+            )
+
             paint.style = Paint.Style.FILL
+            paint.color = Color.argb(70, 0, 0, 0)
+            canvas.drawOval(
+                position.first - player.bladeHitRadius * 0.9f,
+                position.second + player.bladeHitRadius * 0.5f,
+                position.first + player.bladeHitRadius * 0.9f,
+                position.second + player.bladeHitRadius * 1.0f,
+                paint,
+            )
+
+            canvas.save()
+            canvas.rotate(Math.toDegrees(bladeAngle.toDouble()).toFloat() + 90f, position.first, position.second)
+            canvas.drawBitmap(bladeBitmap, null, dest, null)
+            canvas.restore()
         }
     }
 

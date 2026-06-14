@@ -91,7 +91,11 @@ class Projectile(
     override fun draw(canvas: Canvas, paint: Paint) {
         val activeBitmap = bitmap
         if (activeBitmap != null) {
-            val dest = RectF(x - sprite.radius, y - sprite.radius, x + sprite.radius, y + sprite.radius)
+            // Bitmap projectiles keep their native aspect ratio so arrows and weapons stay readable.
+            val scale = (sprite.radius * 2f) / maxOf(activeBitmap.width, activeBitmap.height).toFloat()
+            val halfWidth = activeBitmap.width * scale * 0.5f
+            val halfHeight = activeBitmap.height * scale * 0.5f
+            val dest = RectF(x - halfWidth, y - halfHeight, x + halfWidth, y + halfHeight)
             canvas.save()
             canvas.rotate(rotationDegrees, x, y)
             canvas.drawBitmap(activeBitmap, null, dest, null)
