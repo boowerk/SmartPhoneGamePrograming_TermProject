@@ -408,6 +408,8 @@ class MainScene(game: MainGame) : Scene(game) {
                 remainingHits = player.axePierce,
             )
         }
+        // Ranged weapon volleys share the same attack cue so the player hears each fired burst.
+        GameAudio.play(GameSfx.ATTACK)
         projectileShotsFired += count
         axeTimer = player.axeInterval
     }
@@ -438,6 +440,7 @@ class MainScene(game: MainGame) : Scene(game) {
                 rotationDegrees = Math.toDegrees(angle.toDouble()).toFloat() + 45f,
             )
         }
+        GameAudio.play(GameSfx.ATTACK)
         projectileShotsFired += count
         knifeTimer = player.knifeInterval
     }
@@ -469,6 +472,7 @@ class MainScene(game: MainGame) : Scene(game) {
                 remainingHits = player.spearPierce,
             )
         }
+        GameAudio.play(GameSfx.ATTACK)
         projectileShotsFired += count
         spearTimer = player.spearInterval
     }
@@ -482,6 +486,8 @@ class MainScene(game: MainGame) : Scene(game) {
                 pickupsCollected += 1
                 when (gem.kind) {
                     PickupKind.EXP -> {
+                        // EXP pickups fire their own cue so magnet sweeps and manual grabs both feel responsive.
+                        GameAudio.play(GameSfx.PICKUP_EXP)
                         if (!leveledUp && player.gainExp(gem.amount)) {
                             leveledUp = true
                         }
@@ -588,6 +594,7 @@ class MainScene(game: MainGame) : Scene(game) {
                 rotationDegrees = Math.toDegrees(projectileAngle.toDouble()).toFloat() + 90f,
             )
         }
+        GameAudio.play(GameSfx.ATTACK)
         shotTimer = player.attackInterval
     }
 

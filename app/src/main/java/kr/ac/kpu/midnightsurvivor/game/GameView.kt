@@ -14,7 +14,8 @@ class GameView(context: Context) : View(context) {
 
     init {
         SpriteAssets.initialize(resources)
-        GameAudio.initialize()
+        // Audio is initialized from the view context so sampled SFX and looping BGM can load resources.
+        GameAudio.initialize(context)
         isFocusable = true
         isClickable = true
     }

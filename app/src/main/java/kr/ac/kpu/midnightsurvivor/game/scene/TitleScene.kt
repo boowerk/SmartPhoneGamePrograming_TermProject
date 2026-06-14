@@ -5,6 +5,8 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.view.MotionEvent
+import kr.ac.kpu.midnightsurvivor.game.audio.GameAudio
+import kr.ac.kpu.midnightsurvivor.game.audio.GameSfx
 import kr.ac.kpu.midnightsurvivor.game.framework.MainGame
 import kr.ac.kpu.midnightsurvivor.game.framework.Scene
 
@@ -51,6 +53,8 @@ class TitleScene(game: MainGame) : Scene(game) {
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_UP && startButton.contains(event.x, event.y)) {
+            // The title button uses the shared click sound so UI feedback stays consistent across scenes.
+            GameAudio.play(GameSfx.BUTTON)
             game.replaceScene(MainScene(game))
             return true
         }

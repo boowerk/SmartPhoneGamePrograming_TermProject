@@ -96,6 +96,8 @@ class ResultScene(
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_UP && restartButton.contains(event.x, event.y)) {
+            // The result button also uses the same shared UI click cue as the other scenes.
+            GameAudio.play(GameSfx.BUTTON)
             game.replaceScene(TitleScene(game))
             return true
         }

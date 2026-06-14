@@ -5,6 +5,8 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.view.MotionEvent
+import kr.ac.kpu.midnightsurvivor.game.audio.GameAudio
+import kr.ac.kpu.midnightsurvivor.game.audio.GameSfx
 import kr.ac.kpu.midnightsurvivor.game.framework.MainGame
 import kr.ac.kpu.midnightsurvivor.game.framework.Scene
 import kr.ac.kpu.midnightsurvivor.game.graphics.SpriteAssets
@@ -126,6 +128,8 @@ class LevelUpScene(
         if (event.action != MotionEvent.ACTION_UP) return true
         for (index in cards.indices) {
             if (cards[index].contains(event.x, event.y)) {
+                // Level-up cards are button-like choices, so they reuse the shared click cue.
+                GameAudio.play(GameSfx.BUTTON)
                 onSelect(options[index])
                 game.popScene()
                 return true
